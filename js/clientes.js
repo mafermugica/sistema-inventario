@@ -163,7 +163,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function abrirEditar(cliente) {
-    console.log("Entró a editar:", cliente);
     modo = "edit";
     folioEditando = cliente.folio;
 
@@ -390,28 +389,22 @@ $("#modalDetalleCliente").modal("show");
     const clientes = getClientes();
     const cliente = clientes.find(c => c.folio === folio);
 
-    console.log("Click detectado en fila:", folio);
-    console.log("Cliente encontrado:", cliente);
-
     if (!cliente) return;
 
     const btnDetalle = e.target.closest(".btn-detalle");
     if (btnDetalle) {
-      console.log("Boton de dealle presionado");
       abrirDetalle(cliente);
       return;
     }
 
     const btnEditar = e.target.closest(".btn-editar");
     if (btnEditar) {
-      console.log("Boton de editar presionado");
       abrirEditar(cliente);
       return;
     }
 
     const btnEliminar = e.target.closest(".btn-eliminar");
     if (btnEliminar) {
-      console.log("Boton de eliminar presionado");
       if (!confirm(`¿Eliminar el cliente ${folio}?`)) return;
       const nuevos = clientes.filter(c => c.folio !== folio);
       setClientes(nuevos);

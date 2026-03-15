@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Sistema de clientes</title>
+    <title>Inventario de productos</title>
 
     <!-- Custom fonts for this template-->
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -21,15 +21,15 @@
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
 
     <style>
-    #modalCategoriasCliente {
+    #modalCategoriasProducto {
         z-index: 1065;
     }
 
-    #modalCategoriasCliente .modal-dialog {
+    #modalCategoriasProducto .modal-dialog {
         z-index: 1070;
     }
 
-    #modalNuevoCliente {
+    #modalNuevoProducto {
         z-index: 1050;
     }
     .ventana-secundaria-overlay {
@@ -120,7 +120,7 @@
                     <form
                         class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
                         <div class="input-group">
-                            <input id="buscarClientes" type="text" class="form-control bg-light border-0 small" placeholder="Buscar clientes..."
+                            <input id="buscarProductos" type="text" class="form-control bg-light border-0 small" placeholder="Buscar productos..."
                             aria-label="Buscar" aria-describedby="basic-addon2">
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="button">
@@ -316,13 +316,13 @@
                 <div class="container-fluid">
 
                     <!-- Page Heading -->
-                    <h1 class="h3 mb-4 text-gray-800">Lista de clientes</h1>
+                    <h1 class="h3 mb-4 text-gray-800">Lista de productos</h1>
                     <div class="card shadow mb-4">
     
     <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">Directorio de clientes</h6>
-        <a href="#" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalNuevoCliente">
-    <i class="fas fa-plus fa-sm text-white-50"></i> Agregar Nuevo Cliente
+        <h6 class="m-0 font-weight-bold text-primary">Directorio de productos</h6>
+        <a href="#" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalNuevoProducto">
+    <i class="fas fa-plus fa-sm text-white-50"></i> Agregar Producto
 </a>
     </div>
 
@@ -331,23 +331,19 @@
             <table class="table table-bordered table-hover text-center" id="dataTable" width="100%" cellspacing="0">
                 <thead class="thead-light">
                     <tr>
-                        <th>Folio</th>
-                        <th>Nombre</th>
-                        <th>Apellido paterno</th>
-                        <th>Apellido materno</th>
-                        <th>Teléfono</th>
-                        <th>Email</th>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Categorías</th>
                         <th style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>CLI-001</td>
-                        <td>Claudia</td>
-                        <td>Ortiz</td>
-                        <td>Rodriguez</td>
-                        <td>+52 123 456 7890</td>
-                        <td>claudia.ortiz@ejemplo.com</td>
+                        <td>PROD-001</td>
+                        <td>Fertilizante orgánico</td>
+                        <td>1000.00</td>
+                        <td>Agroquimicos</td>
                         <td>
                             <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle"><i class="fas fa-eye"></i></button>
                             <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar"><i class="fas fa-pen"></i></button>
@@ -355,12 +351,10 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>CLI-002</td>
-                        <td>Carlos</td>
-                        <td>Garcia</td>
-                        <td>Mendoza</td>
-                        <td>+52 987 654 3210</td>
-                        <td>carlos.garcia@ejemplo.com</td>
+                        <td>PROD-002</td>
+                        <td>Abono orgánico</td>
+                        <td>1500.00</td>
+                        <td>Abonos</td>
                         <td>
                             <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle"><i class="fas fa-eye"></i></button>
                             <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar"><i class="fas fa-pen"></i></button>
@@ -400,6 +394,9 @@
         <i class="fas fa-angle-up"></i>
     </a>
 
+            </div>
+            <!-- End of Main Content -->
+
     <!-- Logout Modal-->
     <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
         aria-hidden="true">
@@ -420,123 +417,99 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalNuevoCliente" tabindex="-1" role="dialog" aria-labelledby="tituloModal" aria-hidden="true">
+    <div class="modal fade" id="modalNuevoProducto" tabindex="-1" role="dialog" aria-labelledby="tituloModal" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="tituloModal">Registrar Nuevo Cliente</h5>
+                <h5 class="modal-title" id="tituloModal">Registrar Nuevo Producto</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
 
             <div class="modal-body">
-                <form id="formularioCliente">
+                <form id="formularioProducto">
                     <div class="form-group">
-                        <label for="codigoCli">Folio</label>
-                        <input type="text" class="form-control" id="codigoCli" placeholder="Ej. CLI-001">
+                        <label for="codigoProd">Código</label>
+                        <input type="text" class="form-control" id="codigoProd" placeholder="Ej. PROD-001">
                     </div>
 
                     <div class="form-group">
-                        <label for="nombreCli">Nombre del Cliente</label>
-                        <input type="text" class="form-control" id="nombreCli" placeholder="Ej. Juan">
-    </div>
+                        <label for="descripcionProd">Descripción</label>
+                        <input type="text" class="form-control" id="descripcionProd" placeholder="Ej. Fertilizante orgánico">
+                    </div>
 
-    <div class="form-group">
-        <label for="apellidoPaterno">Apellido Paterno</label>
-        <input type="text" class="form-control" id="apellidoPaterno" placeholder="Ej. García">
-    </div>
-
-    <div class="form-group">
-        <label for="apellidoMaterno">Apellido Materno</label>
-        <input type="text" class="form-control" id="apellidoMaterno" placeholder="Ej. López">
-    </div>
-
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label for="estadoCli">Estado</label>
-            <select id="estadoCli" class="form-control">
-                <option value="" selected>Elegir...</option>
-                <option value="Veracruz">Veracruz</option>
-                <option value="Puebla">Puebla</option>
-                <option value="Oaxaca">Oaxaca</option>
-                <option value="Chiapas">Chiapas</option>
-            </select>
-        </div>
-
-        <div class="form-group col-md-6">
-            <label for="municipioCli">Municipio</label>
-            <select id="municipioCli" class="form-control">
-                <option value="" selected>Elegir...</option>
-                <option value="Xalapa">Xalapa</option>
-                <option value="Veracruz Puerto">Veracruz Puerto</option>
-                <option value="Coatepec">Coatepec</option>
-                <option value="Boca del Río">Boca del Río</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label for="telefonoCli">Teléfono</label>
-        <input type="text"  maxlength="10" class="form-control" id="telefonoCli" placeholder="Ej. 2291234567">
-    </div>
-
-    <div class="form-group">
-        <label for="emailCli">Email</label>
-        <input type="email" class="form-control" id="emailCli" placeholder="ejemplo@dominio.com">
-    </div>
-
-    <hr>
+                    <div class="form-group">
+                        <label for="precioProd">Precio</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="precioProd" placeholder="Ej. 350.00">
+                    </div>
 
 <div class="form-group">
-    <label>Categorías del cliente</label>
-    <div class="d-flex align-items-center">
-        <button type="button" class="btn btn-success btn-sm" id="btnAbrirCategorias">
+    <label class="mb-2">Categorías del producto</label>
+    <div class="d-flex align-items-center flex-wrap">
+        <button type="button" class="btn btn-primary btn-sm" id="btnAbrirCategoriasProducto">
             Administrar categorías
         </button>
-        <span class="ml-3 text-muted" id="resumenCategorias">0 categorías registradas</span>
+        <span class="ml-3 text-muted" id="resumenCategoriasProducto">0 categorías registradas</span>
     </div>
 </div>
+
+<div class="form-group">
+    <label class="mb-2">Subcategorías del producto</label>
+    <div class="d-flex align-items-center flex-wrap">
+        <button type="button" class="btn btn-success btn-sm" id="btnAbrirSubcategorias">
+            Administrar subcategorías
+        </button>
+        <span class="ml-3 text-muted" id="resumenSubcategoriasProducto">0 subcategorías registradas</span>
+    </div>
+</div>
+
 </form>
-            </div>
+</div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="btnGuardarCliente">Guardar Cliente</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarProducto">Guardar Producto</button>
             </div>
             
         </div>
     </div>
 </div>
 
-<div id="modalCategoriasCliente" class="ventana-secundaria-overlay" style="display: none;">
+<div id="modalCategoriasProducto" class="ventana-secundaria-overlay" style="display: none;">
     <div class="ventana-secundaria-contenido">
         <div class="ventana-secundaria-header bg-success text-white d-flex justify-content-between align-items-center px-3 py-2">
-            <h5 class="mb-0">Categorías del cliente</h5>
+            <h5 class="mb-0">Categorías del producto</h5>
             <button type="button" class="close text-white" id="btnCerrarCategoriasX" aria-label="Cerrar">
                 <span aria-hidden="true">&times;</span>
             </button>
         </div>
 
         <div class="p-3">
-            <p class="mb-1"><strong>Folio:</strong> <span id="catClienteFolio">Nuevo cliente</span></p>
-            <p><strong>Nombre:</strong> <span id="catClienteNombre">Sin definir</span></p>
+            <p class="mb-1"><strong>Codigo:</strong> <span id="catProductoCodigo">Nuevo producto</span></p>
+            <p><strong>Descripcion:</strong> <span id="catProductoDescripcion">Sin definir</span></p>
 
-            <div class="input-group mb-3">
-                <select id="selectNuevaCategoria" class="form-control">
-                    <option value="" selected>Elegir categoría...</option>
-                    <option value="Solar">Solar</option>
-                    <option value="Agua">Agua</option>
-                    <option value="Ganado">Ganado</option>
-                </select>
-                <div class="input-group-append">
-                    <button type="button" class="btn btn-success" id="btnAgregarCategoria">
-                        Agregar categoría
-                    </button>
-                </div>
-            </div>
+            <div class="form-row align-items-end">
+    <div class="form-group col-md-9">
+        <label for="selectCategoriaProducto">Categoría</label>
+        <select id="selectCategoriaProducto" class="form-control">
+            <option value="" selected>Elegir categoría...</option>
+            <option value="Fertilizantes">Fertilizantes</option>
+            <option value="Agroquímicos">Agroquímicos</option>
+            <option value="Semillas">Semillas</option>
+            <option value="Herramientas">Herramientas</option>
+            <option value="Riego">Riego</option>
+        </select>
+    </div>
 
-            <div id="listaCategoriasCliente"></div>
+    <div class="form-group col-md-3">
+        <button type="button" class="btn btn-primary btn-block" id="btnAgregarCategoriaProducto">
+            Agregar
+        </button>
+    </div>
+</div>
+
+            <div id="listaCategoriasProducto" class="mt-3"></div>
         </div>
 
         <div class="px-3 pb-3 text-right">
@@ -547,29 +520,77 @@
     </div>
 </div>
 
+<div id="modalSubcategoriasProducto" class="ventana-secundaria-overlay" style="display: none;">
+    <div class="ventana-secundaria-contenido">
+        <div class="ventana-secundaria-header bg-success text-white d-flex justify-content-between align-items-center px-3 py-2">
+            <h5 class="mb-0">Subcategorías del producto</h5>
+            <button type="button" class="close text-white" id="btnCerrarSubcategoriasX" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
 
+        <div class="p-3">
+            <p class="mb-1"><strong>Código:</strong> <span id="subProductoCodigo">Nuevo producto</span></p>
+            <p><strong>Descripción:</strong> <span id="subProductoDescripcion">Sin definir</span></p>
 
-<div class="modal fade" id="modalDetalleCliente" tabindex="-1" role="dialog" aria-labelledby="tituloDetalleCliente" aria-hidden="true">
+            <div class="form-row align-items-end">
+                <div class="form-group col-md-4">
+                    <label for="selectNuevaSubcategoria">Subcategoría</label>
+                    <select id="selectNuevaSubcategoria" class="form-control">
+                        <option value="" selected>Elegir subcategoría...</option>
+                        <option value="Peso">Peso</option>
+                        <option value="Voltaje">Voltaje</option>
+                        <option value="Capacidad">Capacidad</option>
+                    </select>
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label for="valorSubcategoria">Valor</label>
+                    <select id="valorSubcategoria" class="form-control">
+                        <option value="">Elegir valor...</option>
+                    </select>
+                </div>
+
+                <div class="form-group col-md-3">
+                    <label for="unidadSubcategoria">Unidad</label>
+                    <input type="text" class="form-control" id="unidadSubcategoria" readonly>
+                </div>
+
+                <div class="form-group col-md-2">
+                    <button type="button" class="btn btn-success btn-block" id="btnAgregarSubcategoria">
+                        Agregar
+                    </button>
+                </div>
+            </div>
+
+            <div id="listaSubcategoriasProducto" class="mt-3"></div>
+        </div>
+
+        <div class="px-3 pb-3 text-right">
+            <button type="button" class="btn btn-secondary" id="btnCerrarSubcategorias">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalDetalleProducto" tabindex="-1" role="dialog" aria-labelledby="tituloDetalleProducto" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
 
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="tituloDetalleCliente">Detalle del Cliente</h5>
+                <h5 class="modal-title" id="tituloDetalleProducto">Detalle del Producto</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
 
             <div class="modal-body">
-                <p><strong>Folio:</strong> <span id="detalleFolio"></span></p>
-                <p><strong>Nombre:</strong> <span id="detalleNombre"></span></p>
-                <p><strong>Apellido paterno:</strong> <span id="detalleApPat"></span></p>
-                <p><strong>Apellido materno:</strong> <span id="detalleApMat"></span></p>
-                <p><strong>Teléfono:</strong> <span id="detalleTelefono"></span></p>
-                <p><strong>Email:</strong> <span id="detalleEmail"></span></p>
-                <p><strong>Estado:</strong> <span id="detalleEstado"></span></p>
-                <p><strong>Municipio:</strong> <span id="detalleMunicipio"></span></p>
+                <p><strong>Código:</strong> <span id="detalleCodigo"></span></p>
+                <p><strong>Descripción:</strong> <span id="detalleDescripcion"></span></p>
+                <p><strong>Precio:</strong> <span id="detallePrecio"></span></p>
                 <p><strong>Categorías:</strong> <span id="detalleCategorias"></span></p>
+                <p><strong>Subcategorías:</strong> <span id="detalleSubcategorias"></span></p>
             </div>
 
             <div class="modal-footer">
@@ -591,6 +612,6 @@
     <!-- Custom scripts for all pages-->
     <script src="js/sb-admin-2.min.js"></script>
 
-    <script src="js/clientes.js"></script>
+    <script src="js/productos.js"></script>
 </body>
 </html>
