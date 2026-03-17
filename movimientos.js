@@ -1,137 +1,250 @@
-document.addEventListener("DOMContentLoaded", () => {
+<!DOCTYPE html>
+<html lang="es">
 
-  const STORAGE = "movimientos_v1";
-  let editIndex = null;
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Módulo de Movimientos de Inventario">
+    <meta name="author" content="">
 
-  const getData = () => JSON.parse(localStorage.getItem(STORAGE)) || [];
-  const setData = (data) => localStorage.setItem(STORAGE, JSON.stringify(data));
+    <title>Movimientos de Inventario - Agromundo</title>
 
-  const getProductos = () => JSON.parse(localStorage.getItem("productos_v1")) || [];
-  const getAlmacenes = () => JSON.parse(localStorage.getItem("almacenes_v1")) || [];
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
 
-  const tabla = document.getElementById("tablaMovimientos");
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
 
-  const fecha = document.getElementById("fecha");
-  const almacen = document.getElementById("almacen");
-  const producto = document.getElementById("producto");
-  const tipo = document.getElementById("tipo");
-  const cantidad = document.getElementById("cantidad");
+    <style>
+        .modal { z-index: 1050; }
+        .modal-backdrop { z-index: 1040; }
+    </style>
+</head>
 
-  const btnGuardar = document.getElementById("guardarMovimiento");
+<body id="page-top">
 
-  // 🔥 LLENAR SELECTS
-  function cargarSelects() {
+    <div id="wrapper">
 
-    almacen.innerHTML = '<option value="">Seleccionar almacén</option>';
-    getAlmacenes().forEach(a => {
-      almacen.innerHTML += `<option value="${a.nombre}">${a.nombre}</option>`;
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">Agromundo</div>
+            </a>
+
+            <hr class="sidebar-divider my-0">
+
+            <li class="nav-item">
+                <a class="nav-link" href="index.html">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+
+            <hr class="sidebar-divider">
+            <div class="sidebar-heading">Inventario</div>
+            
+            <li class="nav-item">
+                <a class="nav-link" href="productos.html">
+                    <i class="fas fa-fw fa-box"></i>
+                    <span>Productos</span>
+                </a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="movimientos.html">
+                    <i class="fas fa-fw fa-exchange-alt"></i>
+                    <span>Movimientos</span>
+                </a>
+            </li>
+
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <div id="content">
+
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <ul class="navbar-nav ml-auto">
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Usuario Sistema</span>
+                                <img class="img-profile rounded-circle" src="img/undraw_profile.svg">
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Cerrar Sesión
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <div class="container-fluid">
+
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Movimientos de Inventario</h1>
+                        <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#modalNuevoMovimiento">
+                            <i class="fas fa-plus fa-sm text-white-50"></i> Registrar Movimiento
+                        </a>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-primary">Historial de Entradas y Salidas</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover text-center" id="dataTable" width="100%" cellspacing="0">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>ID Mov</th>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Almacén</th>
+                                            <th>Producto</th>
+                                            <th>Cant.</th>
+                                            <th>Motivo</th>
+                                            <th style="width: 80px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbodyMovimientos">
+                                        </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                </div>
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; 2026 Sistema Inventario Agromundo</span>
+                    </div>
+                </div>
+            </footer>
+            </div>
+        </div>
+    <div class="modal fade" id="modalNuevoMovimiento" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Registrar Nuevo Movimiento</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="formularioMovimiento">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Tipo de Movimiento *</label>
+                                <select class="form-control" id="tipoMov" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="Entrada">Entrada</option>
+                                    <option value="Salida">Salida</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Almacén *</label>
+                                <select class="form-control" id="almacenMov" required>
+                                    <option value="">Seleccione almacén...</option>
+                                    </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group col-md-8">
+                                <label>Producto *</label>
+                                <select class="form-control" id="productoMov" required disabled>
+                                    <option value="">Seleccione almacén primero...</option>
+                                    </select>
+                                <small class="text-info font-weight-bold mt-1 d-block" id="stockActualInfo"></small>
+                            </div>
+                            <div class="form-group col-md-4">
+                                <label>Cantidad *</label>
+                                <input type="number" class="form-control" id="cantidadMov" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Motivo *</label>
+                            <select class="form-control" id="motivoMov" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Compra">Compra a Proveedor</option>
+                                <option value="Venta">Venta</option>
+                                <option value="Ajuste">Ajuste de Inventario</option>
+                                <option value="Merma">Merma / Daño</option>
+                                <option value="Traspaso">Traspaso interno</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Observaciones</label>
+                            <textarea class="form-control" id="observacionesMov" rows="2" placeholder="Opcional..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarMovimiento">Confirmar Movimiento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalDetalleMovimiento" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">Detalle de Movimiento</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="contenidoDetalleMov">
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
+    
+    <script src="js/movimientos.js"></script>
+
+</body>
+</html>
+// Función para llenar el select de almacenes
+function cargarAlmacenesEnSelect() {
+    const select = document.getElementById('selectAlmacen');
+    // Supongamos que guardas tus almacenes en localStorage
+    const almacenes = JSON.parse(localStorage.getItem('almacenes')) || [];
+
+    // Limpiar opciones previas excepto la primera
+    select.innerHTML = '<option value="">Seleccione almacén...</option>';
+
+    almacenes.forEach(almacen => {
+        const option = document.createElement('option');
+        option.value = almacen.nombre; // O el ID que uses
+        option.textContent = almacen.nombre; // Muestra "AL-001", etc.
+        select.appendChild(option);
     });
+}
 
-    producto.innerHTML = '<option value="">Seleccionar producto</option>';
-    getProductos().forEach(p => {
-      producto.innerHTML += `<option value="${p.descripcion}">${p.descripcion}</option>`;
-    });
-  }
-
-  // 🔥 RENDER TABLA
-  function render() {
-    const data = getData();
-
-    tabla.innerHTML = "";
-
-    data.forEach((m, i) => {
-      tabla.innerHTML += `
-        <tr>
-          <td>${m.fecha}</td>
-          <td>${m.almacen}</td>
-          <td>${m.producto}</td>
-          <td>${m.tipo}</td>
-          <td>${m.cantidad}</td>
-          <td>
-            <button class="btn btn-info btn-sm ver" data-i="${i}">👁</button>
-            <button class="btn btn-warning btn-sm editar" data-i="${i}">✏️</button>
-            <button class="btn btn-danger btn-sm eliminar" data-i="${i}">🗑</button>
-          </td>
-        </tr>
-      `;
-    });
-  }
-
-  // 🔥 GUARDAR
-  btnGuardar.addEventListener("click", () => {
-
-    if (!fecha.value || !almacen.value || !producto.value || !cantidad.value) {
-      alert("Completa todos los campos");
-      return;
-    }
-
-    const data = getData();
-
-    const nuevo = {
-      fecha: fecha.value,
-      almacen: almacen.value,
-      producto: producto.value,
-      tipo: tipo.value,
-      cantidad: Number(cantidad.value)
-    };
-
-    if (editIndex === null) {
-      data.push(nuevo);
-    } else {
-      data[editIndex] = nuevo;
-      editIndex = null;
-    }
-
-    setData(data);
-    render();
-
-    $("#modalMovimiento").modal("hide");
-
-    fecha.value = "";
-    cantidad.value = "";
-  });
-
-  // 🔥 ACCIONES
-  tabla.addEventListener("click", (e) => {
-
-    const i = e.target.dataset.i;
-    const data = getData();
-    const mov = data[i];
-
-    if (e.target.classList.contains("eliminar")) {
-      data.splice(i, 1);
-      setData(data);
-      render();
-    }
-
-    if (e.target.classList.contains("editar")) {
-      fecha.value = mov.fecha;
-      almacen.value = mov.almacen;
-      producto.value = mov.producto;
-      tipo.value = mov.tipo;
-      cantidad.value = mov.cantidad;
-
-      editIndex = i;
-
-      $("#modalMovimiento").modal("show");
-    }
-
-    if (e.target.classList.contains("ver")) {
-      document.getElementById("detalleContenido").innerHTML = `
-        <h5>Detalle</h5>
-        <p><b>Fecha:</b> ${mov.fecha}</p>
-        <p><b>Almacén:</b> ${mov.almacen}</p>
-        <p><b>Producto:</b> ${mov.producto}</p>
-        <p><b>Tipo:</b> ${mov.tipo}</p>
-        <p><b>Cantidad:</b> ${mov.cantidad}</p>
-      `;
-      $("#modalDetalle").modal("show");
-    }
-
-  });
-
-  // INIT
-  cargarSelects();
-  render();
-
-});
+// Llama a la función cuando se cargue la página o se abra el modal
+document.addEventListener('DOMContentLoaded', cargarAlmacenesEnSelect);
