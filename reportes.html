@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Reportes - Sistema Agromundo</title>
+    <title>Reportes - Agromundo</title>
 
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
@@ -14,40 +14,90 @@
 
 <body id="page-top">
     <div id="wrapper">
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+                <div class="sidebar-brand-icon rotate-n-15"><i class="fas fa-seedling"></i></div>
+                <div class="sidebar-brand-text mx-3">Agromundo</div>
+            </a>
+            <hr class="sidebar-divider my-0">
+            <li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-fw fa-tachometer-alt"></i> <span>Inicio</span></a></li>
+            <hr class="sidebar-divider">
+            <div class="sidebar-heading">Módulos</div>
+            <li class="nav-item"><a class="nav-link" href="almacenes.html"><i class="fas fa-warehouse"></i> <span>Almacenes</span></a></li>
+            <li class="nav-item"><a class="nav-link" href="productos.html"><i class="fas fa-box"></i> <span>Productos</span></a></li>
+            <li class="nav-item active"><a class="nav-link" href="reportes.html"><i class="fas fa-fw fa-chart-bar"></i> <span>Reportes</span></a></li>
+        </ul>
+
         <div id="content-wrapper" class="d-flex flex-column">
             <div id="content">
-                <div class="container-fluid">
-                    <h1 class="h3 mb-4 text-gray-800">Panel de Reportes</h1>
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow"></nav>
 
-                    <div class="row">
-                        <div class="col-xl-8 col-lg-7">
+                <div class="container-fluid">
+                    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                        <h1 class="h3 mb-0 text-gray-800">Panel de Análisis de Datos</h1>
+                    </div>
+
+                    <ul class="nav nav-pills mb-4 shadow-sm p-2 bg-white rounded" id="reportTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="utilidad-tab" data-toggle="tab" href="#tabUtilidad" role="tab">
+                                <i class="fas fa-dollar-sign mr-2"></i>Margen de Utilidad
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="vendidos-tab" data-toggle="tab" href="#tabVendidos" role="tab">
+                                <i class="fas fa-fire mr-2"></i>Más Vendidos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="periodo-tab" data-toggle="tab" href="#tabPeriodo" role="tab">
+                                <i class="fas fa-calendar-alt mr-2"></i>Ventas por Periodo
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="myTabContent">
+                        
+                        <div class="tab-pane fade show active" id="tabUtilidad" role="tabpanel">
                             <div class="card shadow mb-4">
-                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold text-primary">Utilidad por Línea de Producto</h6>
-                                </div>
+                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Utilidad Bruta por Categoría</h6></div>
                                 <div class="card-body">
-                                    <div class="chart-area" style="height: 400px;">
-                                        <canvas id="graficaUtilidad"></canvas>
-                                    </div>
-                                    <hr>
-                                    <small class="text-muted">Los datos se actualizan según las ventas registradas.</small>
+                                    <div style="position: relative; height:350px;"><canvas id="chartUtilidad"></canvas></div>
                                 </div>
                             </div>
                         </div>
 
+                        <div class="tab-pane fade" id="tabVendidos" role="tabpanel">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-success">Productos más Vendidos por Categoría</h6></div>
+                                <div class="card-body">
+                                    <div style="position: relative; height:350px;"><canvas id="chartVendidos"></canvas></div>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="tab-pane fade" id="tabPeriodo" role="tabpanel">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-info">Histórico de Ventas por Periodo</h6></div>
+                                <div class="card-body">
+                                    <div style="position: relative; height:350px;"><canvas id="chartPeriodo"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
+            <footer class="sticky-footer bg-white"><div class="container my-auto"><div class="copyright text-center my-auto"><span>Copyright &copy; Agromundo 2026</span></div></div></footer>
         </div>
     </div>
 
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-    <script src="sb-admin-2.min.js"></script>
+    <script src="js/sb-admin-2.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <script src="reportes.js"></script>
 </body>
 </html>
