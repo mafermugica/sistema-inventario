@@ -74,4 +74,57 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
     });
+
+    // =========================================================================
+    // NUEVO: LÓGICA DE CONTROLES (EXPORTACIÓN Y FECHAS)
+    // =========================================================================
+
+    // 1. Exportar la gráfica actual a PNG
+    const btnExportar = document.getElementById('btnExportar');
+    if (btnExportar) {
+        btnExportar.addEventListener('click', () => {
+            // Busca el canvas que está visible actualmente en la pantalla
+            const activeCanvas = document.querySelector('.tab-pane.active canvas');
+            
+            if (activeCanvas) {
+                // Formateamos la fecha actual para el nombre del archivo (ej. 14-4-2026)
+                const fechaHoy = new Date().toLocaleDateString().replace(/\//g, '-');
+                
+                const link = document.createElement('a');
+                link.download = `Grafica_Agromundo_${fechaHoy}.png`;
+                link.href = activeCanvas.toDataURL('image/png');
+                link.click();
+            } else {
+                alert('No se encontró ninguna gráfica para exportar. Asegúrate de estar en una pestaña válida.');
+            }
+        });
+    }
+
+    // 2. Filtro de Fechas (Preparado para la API)
+    const inputFechaInicio = document.getElementById('fechaInicio');
+    const inputFechaFinal = document.getElementById('fechaFinal');
+
+    function verificarFechas() {
+        const inicio = inputFechaInicio.value;
+        const fin = inputFechaFinal.value;
+
+        // Solo ejecuta la búsqueda si ambas fechas tienen datos
+        if (inicio && fin) {
+            console.log(`Preparando datos para filtrar desde ${inicio} hasta ${fin}`);
+            
+            // ===========================================================
+            // Aquí es donde tu compañera agregará la llamada a la base de datos.
+            // Ejemplo de cómo se verá el código después:
+            // fetch(`http://localhost:3000/api/reportes?inicio=${inicio}&fin=${fin}`)
+            //     .then(response => response.json())
+            //     .then(data => { actualizarGraficas(data); });
+            // ===========================================================
+        }
+    }
+
+    // Escuchar cambios en ambos calendarios
+    if (inputFechaInicio && inputFechaFinal) {
+        inputFechaInicio.addEventListener('change', verificarFechas);
+        inputFechaFinal.addEventListener('change', verificarFechas);
+    }
 });
