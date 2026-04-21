@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const MOVIMIENTOS_KEY = "movimientos_inventario_v1";
-  const INVENTARIOS_KEY = "inventarios_v1";
+  const API_BASE = "http://143.198.230.63";
 
   const btnGuardar = document.getElementById("btnGuardarMovimiento");
   const form = document.getElementById("formularioMovimiento");
@@ -18,170 +17,367 @@ document.addEventListener("DOMContentLoaded", () => {
   let modo = "create";
   let idEditando = null;
 
+  let movimientosCache = [];
+  let inventariosCache = [];
+  let productosCache = [];
+  let almacenesCache = [];
+
   const norm = (v) => (v ?? "").toString().trim();
-
-  const getMovimientos = () => {
-    try {
-      return JSON.parse(localStorage.getItem(MOVIMIENTOS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const setMovimientos = (arr) => {
-    localStorage.setItem(MOVIMIENTOS_KEY, JSON.stringify(arr));
-  };
-
-  const getInventarios = () => {
-    try {
-      return JSON.parse(localStorage.getItem(INVENTARIOS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const setInventarios = (arr) => {
-    localStorage.setItem(INVENTARIOS_KEY, JSON.stringify(arr));
-  };
-
-  function generarIdMovimiento(movimientos) {
-    const ultimo = movimientos.reduce((max, mov) => {
-      const actual = Number(mov.id_mov) || 0;
-      return actual > max ? actual : max;
-    }, 0);
-
-    return ultimo + 1;
-  }
 
   function textoTipo(tipo) {
     return tipo ? "Entrada" : "Salida";
   }
 
-  // --- NUEVA FUNCIÓN PARA FORMATEAR LA FECHA ---
   function formatearFecha(fechaConT) {
     if (!fechaConT) return "";
-    let partes = fechaConT.split('T');
-    if (partes.length !== 2) return fechaConT;
-    let fecha = partes[0].split('-');
-    let hora = partes[1];
-    return `${fecha[2]}-${fecha[1]}-${fecha[0]} ${hora}`;
+
+    const fechaObj = new Date(fechaConT);
+    if (isNaN(fechaObj.getTime())) return fechaConT;
+
+    const yyyy = fechaObj.getFullYear();
+    const mm = String(fechaObj.getMonth() + 1).padStart(2, "0");
+    const dd = String(fechaObj.getDate()).padStart(2, "0");
+    const hh = String(fechaObj.getHours()).padStart(2, "0");
+    const mi = String(fechaObj.getMinutes()).padStart(2, "0");
+
+    return `${dd}-${mm}-${yyyy} ${hh}:${mi}`;
   }
-  // ---------------------------------------------
+
+  function fechaInputValue(fecha) {
+    if (!fecha) return new Date().toISOString().slice(0, 16);
+
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) {
+      return new Date().toISOString().slice(0, 16);
+    }
+
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+  }
 
   function resetFormulario() {
-    form.reset();
+    if (form) form.reset();
     inpFecha.value = new Date().toISOString().slice(0, 16);
     modo = "create";
     idEditando = null;
   }
 
-  function cargarInventarios() {
-    const inventarios = getInventarios();
+  async function apiFetch(endpoint, options = {}) {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+      ...options
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Error en la petición");
+    }
+
+    if (data?.success === false) {
+      throw new Error(data.message || "Ocurrió un error");
+    }
+
+    return data;
+  }
+
+  async function getMovimientosAPI() {
+    const res = await apiFetch("/api/movimientos/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getMovimientoDetalleAPI(idMovimiento) {
+    const res = await apiFetch(`/api/movimientos/${idMovimiento}`);
+    return res.data || null;
+  }
+
+  async function crearMovimientoAPI(payload) {
+    return await apiFetch("/api/movimientos/", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function actualizarMovimientoAPI(idMovimiento, payload) {
+    return await apiFetch(`/api/movimientos/${idMovimiento}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function eliminarMovimientoAPI(idMovimiento) {
+    return await apiFetch(`/api/movimientos/${idMovimiento}`, {
+      method: "DELETE"
+    });
+  }
+
+  async function getInventariosAPI() {
+    const res = await apiFetch("/api/inventarios/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getInventarioDetalleAPI(idInventario) {
+    const res = await apiFetch(`/api/inventarios/${idInventario}`);
+    return res.data || null;
+  }
+
+  async function getProductosAPI() {
+    const res = await apiFetch("/api/productos/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getAlmacenesAPI() {
+    const res = await apiFetch("/api/almacenes/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function cargarCatalogos() {
+    const [inventarios, productos, almacenes] = await Promise.all([
+      getInventariosAPI(),
+      getProductosAPI(),
+      getAlmacenesAPI()
+    ]);
+
+    inventariosCache = inventarios;
+    productosCache = productos;
+    almacenesCache = almacenes;
+  }
+
+  async function cargarInventarios() {
+    await cargarCatalogos();
 
     selectInventario.innerHTML = `
       <option value="">Elegir producto y almacén...</option>
     `;
 
-    inventarios.forEach((inv) => {
+    inventariosCache.forEach((inv) => {
+      const descripcionProducto =
+        inv.descripcion_producto ||
+        inv.nombre_producto ||
+        inv.descripcion ||
+        `Producto ${inv.id_producto ?? ""}`;
+
+      const nombreAlmacen =
+        inv.nombre_almacen ||
+        inv.nombre ||
+        inv.descripcion_almacen ||
+        `Almacén ${inv.id_almacen ?? ""}`;
+
       selectInventario.innerHTML += `
         <option value="${inv.id_inventario}">
-          ${inv.nombre_producto} - ${inv.nombre_almacen}
+          ${descripcionProducto} - ${nombreAlmacen}
         </option>
       `;
     });
   }
 
-  function buscarInventarioPorMovimiento(inventarios, mov) {
-    return inventarios.findIndex((inv) => {
-      if (mov.id_inventario && inv.id_inventario === mov.id_inventario) return true;
-
-      return (
-        inv.id_producto === mov.id_producto &&
-        inv.id_almacen === mov.id_almacen
+  function buscarProductoPorCoincidencia({ idProducto, folioProducto, descripcionProducto }) {
+    if (Number.isFinite(Number(idProducto))) {
+      const porId = productosCache.find(
+        (p) => Number(p.id_producto) === Number(idProducto)
       );
-    });
+      if (porId) return porId;
+    }
+
+    const folioNorm = norm(folioProducto).toLowerCase();
+    if (folioNorm) {
+      const porFolio = productosCache.find((p) => {
+        const posiblesFolios = [
+          p.folio,
+          p.folio_producto,
+          p.codigo,
+          p.cod_producto
+        ]
+          .map((x) => norm(x).toLowerCase())
+          .filter(Boolean);
+
+        return posiblesFolios.includes(folioNorm);
+      });
+      if (porFolio) return porFolio;
+    }
+
+    const descNorm = norm(descripcionProducto).toLowerCase();
+    if (descNorm) {
+      const porDescripcion = productosCache.find((p) => {
+        const posiblesDescripciones = [
+          p.descripcion,
+          p.descripcion_producto,
+          p.nombre_producto,
+          p.nombre
+        ]
+          .map((x) => norm(x).toLowerCase())
+          .filter(Boolean);
+
+        return posiblesDescripciones.includes(descNorm);
+      });
+      if (porDescripcion) return porDescripcion;
+    }
+
+    return null;
   }
 
-  function revertirMovimientoEnInventario(inventarios, mov) {
-    const idx = buscarInventarioPorMovimiento(inventarios, mov);
-
-    if (idx === -1) {
-      throw new Error("No se encontró el inventario original del movimiento.");
+  function buscarAlmacenPorCoincidencia({ idAlmacen, folioAlmacen, nombreAlmacen }) {
+    if (Number.isFinite(Number(idAlmacen))) {
+      const porId = almacenesCache.find(
+        (a) => Number(a.id_almacen) === Number(idAlmacen)
+      );
+      if (porId) return porId;
     }
 
-    const stockActual = Number(inventarios[idx].stock) || 0;
-    const cantidad = Number(mov.cantidad) || 0;
+    const folioNorm = norm(folioAlmacen).toLowerCase();
+    if (folioNorm) {
+      const porFolio = almacenesCache.find((a) => {
+        const posiblesFolios = [
+          a.folio,
+          a.folio_almacen,
+          a.codigo
+        ]
+          .map((x) => norm(x).toLowerCase())
+          .filter(Boolean);
 
-    inventarios[idx].stock = mov.tipo
-      ? stockActual - cantidad
-      : stockActual + cantidad;
-
-    if (Number(inventarios[idx].stock) < 0) {
-      throw new Error("No se pudo revertir el movimiento porque el stock quedaría negativo.");
+        return posiblesFolios.includes(folioNorm);
+      });
+      if (porFolio) return porFolio;
     }
 
-    return idx;
+    const nombreNorm = norm(nombreAlmacen).toLowerCase();
+    if (nombreNorm) {
+      const porNombre = almacenesCache.find((a) => {
+        const posiblesNombres = [
+          a.nombre,
+          a.nombre_almacen,
+          a.descripcion
+        ]
+          .map((x) => norm(x).toLowerCase())
+          .filter(Boolean);
+
+        return posiblesNombres.includes(nombreNorm);
+      });
+      if (porNombre) return porNombre;
+    }
+
+    return null;
   }
 
-  function aplicarMovimientoEnInventario(inventarios, idInventario, tipoTexto, cantidad) {
-    const idx = inventarios.findIndex((inv) => inv.id_inventario === idInventario);
+  async function resolverIdsDesdeInventario(idInventario) {
+    const inventarioLista = inventariosCache.find(
+      (inv) => String(inv.id_inventario) === String(idInventario)
+    );
 
-    if (idx === -1) {
-      throw new Error("No se encontró el inventario seleccionado.");
+    let inventarioDetalle = null;
+
+    try {
+      inventarioDetalle = await getInventarioDetalleAPI(idInventario);
+    } catch (error) {
+      console.warn("No se pudo obtener detalle del inventario:", error.message);
     }
 
-    const stockActual = Number(inventarios[idx].stock) || 0;
-    const esEntrada = tipoTexto === "entrada";
+    let idProducto = Number(
+      inventarioDetalle?.id_producto ?? inventarioLista?.id_producto
+    );
 
-    if (!esEntrada && cantidad > stockActual) {
-      throw new Error("La salida no puede ser mayor al stock disponible.");
+    let idAlmacen = Number(
+      inventarioDetalle?.id_almacen ?? inventarioLista?.id_almacen
+    );
+
+    if (!Number.isFinite(idProducto)) {
+      const producto = buscarProductoPorCoincidencia({
+        idProducto: inventarioDetalle?.id_producto ?? inventarioLista?.id_producto,
+        folioProducto:
+          inventarioDetalle?.folio_producto ??
+          inventarioLista?.folio_producto,
+        descripcionProducto:
+          inventarioDetalle?.descripcion_producto ??
+          inventarioLista?.descripcion_producto ??
+          inventarioLista?.nombre_producto
+      });
+
+      if (producto) {
+        idProducto = Number(producto.id_producto);
+      }
     }
 
-    const stockNuevo = esEntrada
-      ? stockActual + cantidad
-      : stockActual - cantidad;
+    if (!Number.isFinite(idAlmacen)) {
+      const almacen = buscarAlmacenPorCoincidencia({
+        idAlmacen: inventarioDetalle?.id_almacen ?? inventarioLista?.id_almacen,
+        folioAlmacen:
+          inventarioDetalle?.folio_almacen ??
+          inventarioLista?.folio_almacen,
+        nombreAlmacen:
+          inventarioDetalle?.nombre_almacen ??
+          inventarioLista?.nombre_almacen
+      });
 
-    inventarios[idx] = {
-      ...inventarios[idx],
-      stock: stockNuevo
-    };
+      if (almacen) {
+        idAlmacen = Number(almacen.id_almacen);
+      }
+    }
+
+    if (!Number.isFinite(idProducto) || !Number.isFinite(idAlmacen)) {
+      console.log("inventarioDetalle", inventarioDetalle);
+      console.log("inventarioLista", inventarioLista);
+      console.log("productosCache", productosCache);
+      console.log("almacenesCache", almacenesCache);
+
+      throw new Error(
+        "No se pudieron resolver los ids del producto o almacén desde el inventario seleccionado."
+      );
+    }
 
     return {
-      inventario: inventarios[idx],
-      stockAnterior: stockActual,
-      stockNuevo,
-      esEntrada
+      id_producto: idProducto,
+      id_almacen: idAlmacen
     };
   }
 
-  function renderTabla(filtro = "") {
+  function buscarInventarioPorProductoYAlmacen(idProducto, idAlmacen) {
+    return inventariosCache.find(
+      (inv) =>
+        String(inv.id_producto) === String(idProducto) &&
+        String(inv.id_almacen) === String(idAlmacen)
+    );
+  }
+
+  async function renderTabla(filtro = "") {
     const f = norm(filtro).toLowerCase();
-    const movimientos = getMovimientos();
+
+    movimientosCache = await getMovimientosAPI();
 
     const lista = !f
-      ? movimientos
-      : movimientos.filter((m) => {
+      ? movimientosCache
+      : movimientosCache.filter((m) => {
           const texto = `
-            ${m.id_mov}
-            ${m.fecha}
+            ${m.id_mov || ""}
+            ${m.fecha || ""}
             ${textoTipo(m.tipo)}
-            ${m.nombre_producto}
-            ${m.nombre_almacen}
-            ${m.cantidad}
-            ${m.id_venta}
+            ${m.descripcion_producto || ""}
+            ${m.nombre_almacen || ""}
+            ${m.cantidad || ""}
           `.toLowerCase();
 
           return texto.includes(f);
         });
 
-    // --- AQUÍ SE APLICA EL CAMBIO EN LA FECHA ---
+    if (!lista.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="text-center text-muted">No hay movimientos registrados.</td>
+        </tr>
+      `;
+      return;
+    }
+
     tbody.innerHTML = lista.map((m) => `
       <tr data-id="${m.id_mov}">
         <td>${formatearFecha(m.fecha) || ""}</td>
         <td>${textoTipo(m.tipo)}</td>
-        <td>${m.nombre_producto}</td>
-        <td>${m.nombre_almacen}</td>
-        <td>${m.cantidad}</td>
+        <td>${m.descripcion_producto || ""}</td>
+        <td>${m.nombre_almacen || ""}</td>
+        <td>${m.cantidad ?? 0}</td>
         <td>
           <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle">
             <i class="fas fa-eye"></i>
@@ -197,65 +393,96 @@ document.addEventListener("DOMContentLoaded", () => {
     `).join("");
   }
 
-  function abrirDetalle(mov) {
-    const detalleIdMovimiento = document.getElementById("detalleIdMovimiento");
-    const detalleTipoMovimiento = document.getElementById("detalleTipoMovimiento");
-    const detalleIdVentaMovimiento = document.getElementById("detalleIdVentaMovimiento");
-    const detalleProductoMovimiento = document.getElementById("detalleProductoMovimiento");
-    const detalleAlmacenMovimiento = document.getElementById("detalleAlmacenMovimiento");
-    const detalleCantidadMovimiento = document.getElementById("detalleCantidadMovimiento");
+  async function abrirDetalle(mov) {
+    try {
+      const detalle = await getMovimientoDetalleAPI(mov.id_mov);
 
-    detalleIdMovimiento.textContent = mov.id_mov ?? "";
-    detalleTipoMovimiento.textContent = textoTipo(mov.tipo);
-    detalleIdVentaMovimiento.textContent = mov.id_venta || "No aplica";
-    detalleProductoMovimiento.textContent = mov.nombre_producto || "";
-    detalleAlmacenMovimiento.textContent = mov.nombre_almacen || "";
-    detalleCantidadMovimiento.textContent = mov.cantidad ?? "";
+      if (!detalle) {
+        alert("No se pudo obtener el detalle del movimiento");
+        return;
+      }
 
-    $("#modalDetalleMovimiento").modal("show");
+      const detalleIdMovimiento = document.getElementById("detalleIdMovimiento");
+      const detalleTipoMovimiento = document.getElementById("detalleTipoMovimiento");
+      const detalleIdVentaMovimiento = document.getElementById("detalleIdVentaMovimiento");
+      const detalleProductoMovimiento = document.getElementById("detalleProductoMovimiento");
+      const detalleAlmacenMovimiento = document.getElementById("detalleAlmacenMovimiento");
+      const detalleCantidadMovimiento = document.getElementById("detalleCantidadMovimiento");
+
+      if (detalleIdMovimiento) detalleIdMovimiento.textContent = detalle.id_mov ?? "";
+      if (detalleTipoMovimiento) detalleTipoMovimiento.textContent = textoTipo(detalle.tipo);
+      if (detalleIdVentaMovimiento) detalleIdVentaMovimiento.textContent = detalle.id_venta || "No aplica";
+      if (detalleProductoMovimiento) detalleProductoMovimiento.textContent = detalle.descripcion_producto || "";
+      if (detalleAlmacenMovimiento) detalleAlmacenMovimiento.textContent = detalle.nombre_almacen || "";
+      if (detalleCantidadMovimiento) detalleCantidadMovimiento.textContent = detalle.cantidad ?? "";
+
+      $("#modalDetalleMovimiento").modal("show");
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
-  function abrirEditar(mov) {
-    modo = "edit";
-    idEditando = mov.id_mov;
+  async function abrirEditar(mov) {
+    try {
+      const detalle = await getMovimientoDetalleAPI(mov.id_mov);
 
-    inpFecha.value = mov.fecha || "";
-    selectTipo.value = mov.tipo ? "entrada" : "salida";
-    selectInventario.value = mov.id_inventario || "";
-    inpCantidad.value = mov.cantidad ?? "";
+      if (!detalle) {
+        alert("No se pudo obtener el detalle del movimiento");
+        return;
+      }
 
-    tituloModal.textContent = `Editar Movimiento ${mov.id_mov}`;
-    btnGuardar.textContent = "Guardar Cambios";
-    $(modalRegistro).modal("show");
+      modo = "edit";
+      idEditando = detalle.id_mov;
+
+      inpFecha.value = fechaInputValue(detalle.fecha);
+      selectTipo.value = detalle.tipo ? "entrada" : "salida";
+      inpCantidad.value = detalle.cantidad ?? "";
+
+      await cargarInventarios();
+
+      const inventarioRelacionado = buscarInventarioPorProductoYAlmacen(
+        detalle.id_producto,
+        detalle.id_almacen
+      );
+
+      selectInventario.value = inventarioRelacionado
+        ? inventarioRelacionado.id_inventario
+        : "";
+
+      tituloModal.textContent = `Editar Movimiento ${detalle.id_mov}`;
+      btnGuardar.textContent = "Guardar Cambios";
+      $(modalRegistro).modal("show");
+    } catch (error) {
+      alert(error.message);
+    }
   }
 
-  cargarInventarios();
-  renderTabla();
-  resetFormulario();
+  $(modalRegistro).on("show.bs.modal", async function () {
+    try {
+      await cargarInventarios();
 
-  $(modalRegistro).on("show.bs.modal", function () {
-    cargarInventarios();
-
-    if (modo !== "edit") {
-    resetFormulario();
-    tituloModal.textContent = "Registrar Movimiento";
-    btnGuardar.textContent = "Guardar Movimiento";
-
+      if (modo !== "edit") {
+        resetFormulario();
+        tituloModal.textContent = "Registrar Movimiento";
+        btnGuardar.textContent = "Guardar Movimiento";
+      }
+    } catch (error) {
+      alert(error.message);
     }
   });
 
-  if (btnGuardar) {
-    btnGuardar.addEventListener("click", (e) => {
-    e.preventDefault();
+  $(modalRegistro).on("hidden.bs.modal", function () {
+    resetFormulario();
+    tituloModal.textContent = "Registrar Movimiento";
+    btnGuardar.textContent = "Guardar Movimiento";
+  });
 
-    $(modalRegistro).on("hidden.bs.modal", function () {
-  resetFormulario();
-  tituloModal.textContent = "Registrar Movimiento";
-  btnGuardar.textContent = "Guardar Movimiento";
-});
+  if (btnGuardar) {
+    btnGuardar.addEventListener("click", async (e) => {
+      e.preventDefault();
 
       const fecha = norm(inpFecha.value);
-      const tipoTexto = norm(selectTipo.value);
+      const tipoTexto = norm(selectTipo.value).toLowerCase();
       const idInventario = norm(selectInventario.value);
       const cantidad = Number(inpCantidad.value);
 
@@ -269,129 +496,95 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const inventarios = getInventarios();
-      const movimientos = getMovimientos();
+      const textoOriginalBoton = btnGuardar.textContent;
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = "Guardando...";
 
       try {
-        if (modo === "create") {
-          const resultado = aplicarMovimientoEnInventario(
-            inventarios,
-            idInventario,
-            tipoTexto,
-            cantidad
-          );
+        const idsInventario = await resolverIdsDesdeInventario(idInventario);
 
-          movimientos.push({
-            id_mov: generarIdMovimiento(movimientos),
-            tipo: resultado.esEntrada,
-            cantidad,
-            id_venta: "",
-            id_producto: resultado.inventario.id_producto,
-            id_almacen: resultado.inventario.id_almacen,
-            id_inventario: resultado.inventario.id_inventario,
-            nombre_producto: resultado.inventario.nombre_producto,
-            nombre_almacen: resultado.inventario.nombre_almacen,
-            fecha
-          });
-
-          setInventarios(inventarios);
-          setMovimientos(movimientos);
-          renderTabla(inputBuscar ? inputBuscar.value : "");
-          resetFormulario();
-          $(modalRegistro).modal("hide");
-          return;
-        }
-
-        const idxMovimiento = movimientos.findIndex(
-          (m) => Number(m.id_mov) === Number(idEditando)
-        );
-
-        if (idxMovimiento === -1) {
-          alert("No se encontró el movimiento a editar");
-          return;
-        }
-
-        const movimientoOriginal = movimientos[idxMovimiento];
-
-        revertirMovimientoEnInventario(inventarios, movimientoOriginal);
-
-        const resultado = aplicarMovimientoEnInventario(
-          inventarios,
-          idInventario,
-          tipoTexto,
-          cantidad
-        );
-
-        movimientos[idxMovimiento] = {
-          ...movimientoOriginal,
-          tipo: resultado.esEntrada,
+        const payload = {
+          tipo: tipoTexto === "entrada",
           cantidad,
-          id_venta: movimientoOriginal.id_venta || "",
-          id_producto: resultado.inventario.id_producto,
-          id_almacen: resultado.inventario.id_almacen,
-          id_inventario: resultado.inventario.id_inventario,
-          nombre_producto: resultado.inventario.nombre_producto,
-          nombre_almacen: resultado.inventario.nombre_almacen,
-          fecha
+          id_producto: idsInventario.id_producto,
+          id_almacen: idsInventario.id_almacen
         };
 
-        setInventarios(inventarios);
-        setMovimientos(movimientos);
-        renderTabla(inputBuscar ? inputBuscar.value : "");
+        if (modo === "create") {
+          await crearMovimientoAPI(payload);
+          alert("Movimiento registrado correctamente");
+        } else {
+          await actualizarMovimientoAPI(idEditando, payload);
+          alert("Movimiento actualizado correctamente");
+        }
+
+        await cargarInventarios();
+        await renderTabla(inputBuscar ? inputBuscar.value : "");
         resetFormulario();
         $(modalRegistro).modal("hide");
       } catch (error) {
-        alert(error.message);
+        console.error(error);
+        alert(error.message || "Error al guardar movimiento");
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = textoOriginalBoton;
       }
     });
   }
 
   if (tbody) {
-    tbody.addEventListener("click", (e) => {
+    tbody.addEventListener("click", async (e) => {
       const tr = e.target.closest("tr");
       if (!tr) return;
 
       const id = Number(tr.getAttribute("data-id"));
-      const movimientos = getMovimientos();
-      const mov = movimientos.find((m) => Number(m.id_mov) === id);
+      const mov = movimientosCache.find((m) => Number(m.id_mov) === id);
 
       if (!mov) return;
 
       if (e.target.closest(".btn-detalle")) {
-        abrirDetalle(mov);
+        await abrirDetalle(mov);
         return;
       }
 
       if (e.target.closest(".btn-editar")) {
-        abrirEditar(mov);
+        await abrirEditar(mov);
         return;
       }
 
       if (e.target.closest(".btn-eliminar")) {
         if (!confirm(`¿Eliminar el movimiento ${mov.id_mov}?`)) return;
 
-        const inventarios = getInventarios();
-
         try {
-          revertirMovimientoEnInventario(inventarios, mov);
-
-          const nuevosMovimientos = movimientos.filter(
-            (m) => Number(m.id_mov) !== id
-          );
-
-          setInventarios(inventarios);
-          setMovimientos(nuevosMovimientos);
-          renderTabla(inputBuscar ? inputBuscar.value : "");
+          await eliminarMovimientoAPI(mov.id_mov);
+          await cargarInventarios();
+          await renderTabla(inputBuscar ? inputBuscar.value : "");
+          alert("Movimiento eliminado correctamente");
         } catch (error) {
-          alert(error.message);
+          console.error(error);
+          alert(error.message || "Error al eliminar movimiento");
         }
       }
     });
   }
 
   if (inputBuscar) {
-    inputBuscar.addEventListener("input", () => {
-      renderTabla(inputBuscar.value);
+    inputBuscar.addEventListener("input", async () => {
+      try {
+        await renderTabla(inputBuscar.value);
+      } catch (error) {
+        alert(error.message);
+      }
     });
   }
+
+  (async function init() {
+    try {
+      await cargarInventarios();
+      await renderTabla();
+      resetFormulario();
+    } catch (error) {
+      alert(`Error al cargar datos iniciales: ${error.message}`);
+    }
+  })();
 });

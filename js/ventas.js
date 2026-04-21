@@ -1,9 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const VENTAS_KEY = "ventas_v1";
-  const DETALLE_KEY = "detalle_ventas_v1";
-  const PRODUCTOS_KEY = "productos_v1";
-  const INVENTARIOS_KEY = "inventarios_v1";
-  const MOVIMIENTOS_KEY = "movimientos_inventario_v1";
+  const API_BASE = "http://143.198.230.63";
 
   const btnGuardar = document.getElementById("btnGuardarVenta");
   const btnAgregarDetalle = document.getElementById("btnAgregarDetalleVenta");
@@ -33,126 +29,189 @@ document.addEventListener("DOMContentLoaded", () => {
   let idVentaEditando = null;
   let detalleVentaTemporal = [];
 
+  let ventasCache = [];
+  let productosCache = [];
+  let almacenesCache = [];
+  let inventariosCache = [];
+
   const ESTADOS = [
-    { id: "VER", nombre: "Veracruz" },
-    { id: "PUE", nombre: "Puebla" },
-    { id: "CDMX", nombre: "Ciudad de México" },
-    { id: "OAX", nombre: "Oaxaca" }
+    { id: 1, nombre: "AGUASCALIENTES" },
+    { id: 2, nombre: "BAJA CALIFORNIA" },
+    { id: 3, nombre: "BAJA CALIFORNIA SUR" },
+    { id: 4, nombre: "CAMPECHE" },
+    { id: 5, nombre: "CHIAPAS" }
   ];
 
   const MUNICIPIOS = {
-    VER: [
-      { id: "VER_VER", nombre: "Veracruz" },
-      { id: "VER_XAL", nombre: "Xalapa" },
+    1: [
+      { id: 1, nombre: "AGUASCALIENTES" },
+      { id: 2, nombre: "AGUASCALIENTES" },
+      { id: 3, nombre: "ASIENTOS" },
+      { id: 4, nombre: "CALVILLO" },
+      { id: 5, nombre: "COSÍO" },
+      { id: 6, nombre: "JESÚS MARÍA" },
+      { id: 7, nombre: "PABELLÓN DE ARTEAGA" },
+      { id: 8, nombre: "RINCÓN DE ROMOS" },
+      { id: 9, nombre: "SAN JOSÉ DE GRACIA" },
+      { id: 10, nombre: "TEPEZALÁ" },
+      { id: 11, nombre: "EL LLANO" },
+      { id: 12, nombre: "SAN FRANCISCO DE LOS ROMO" }
     ],
-    PUE: [
-      { id: "PUE_PUE", nombre: "Puebla" },
-      { id: "PUE_TEH", nombre: "Tehuacán" },
+    2: [
+      { id: 13, nombre: "ENSENADA" },
+      { id: 14, nombre: "MEXICALI" },
+      { id: 15, nombre: "TECATE" },
+      { id: 16, nombre: "TIJUANA" },
+      { id: 17, nombre: "PLAYAS DE ROSARITO" }
     ],
-    CDMX: [
-      { id: "CDMX_CUA", nombre: "Cuauhtémoc" },
-      { id: "CDMX_COY", nombre: "Coyoacán" },
+    3: [
+      { id: 18, nombre: "COMONDÚ" },
+      { id: 19, nombre: "MULEGÉ" },
+      { id: 20, nombre: "LA PAZ" },
+      { id: 21, nombre: "LOS CABOS" },
+      { id: 22, nombre: "LORETO" }
     ],
-    OAX: [
-      { id: "OAX_OAX", nombre: "Oaxaca de Juárez" },
-      { id: "OAX_JUC", nombre: "Juchitán" }
+    4: [
+      { id: 23, nombre: "CALKINÍ" },
+      { id: 24, nombre: "CAMPECHE" },
+      { id: 25, nombre: "CARMEN" },
+      { id: 26, nombre: "CHAMPOTÓN" },
+      { id: 27, nombre: "HECELCHAKÁN" },
+      { id: 28, nombre: "HOPELCHÉN" },
+      { id: 29, nombre: "PALIZADA" },
+      { id: 30, nombre: "TENABO" },
+      { id: 31, nombre: "ESCÁRCEGA" },
+      { id: 32, nombre: "CALAKMUL" },
+      { id: 33, nombre: "CANDELARIA" }
+    ],
+    5: [
+      { id: 34, nombre: "ACACOYAGUA" },
+      { id: 35, nombre: "ACALA" }
     ]
   };
 
   const norm = (v) => (v ?? "").toString().trim();
-
-  const getVentas = () => {
-    try {
-      return JSON.parse(localStorage.getItem(VENTAS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const setVentas = (arr) => {
-    localStorage.setItem(VENTAS_KEY, JSON.stringify(arr));
-  };
-
-  const getDetalleVentas = () => {
-    try {
-      return JSON.parse(localStorage.getItem(DETALLE_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const setDetalleVentas = (arr) => {
-    localStorage.setItem(DETALLE_KEY, JSON.stringify(arr));
-  };
-
-  const getProductos = () => {
-    try {
-      return JSON.parse(localStorage.getItem(PRODUCTOS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const getInventarios = () => {
-    try {
-      return JSON.parse(localStorage.getItem(INVENTARIOS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const setInventarios = (arr) => {
-    localStorage.setItem(INVENTARIOS_KEY, JSON.stringify(arr));
-  };
-
-  const getMovimientos = () => {
-    try {
-      return JSON.parse(localStorage.getItem(MOVIMIENTOS_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  };
-
-  const setMovimientos = (arr) => {
-    localStorage.setItem(MOVIMIENTOS_KEY, JSON.stringify(arr));
-  };
-
-  function generarIdVenta(ventas) {
-    const ultimo = ventas.reduce((max, v) => {
-      const n = Number(v.id_venta) || 0;
-      return n > max ? n : max;
-    }, 0);
-    return ultimo + 1;
-  }
-
-  function generarFolioVenta(ventas) {
-    const numero = ventas.length + 1;
-    return `VTA-${String(numero).padStart(3, "0")}`;
-  }
-
-  function generarIdDetalle(detalles) {
-    const ultimo = detalles.reduce((max, d) => {
-      const n = Number(d.id_detalle_venta) || 0;
-      return n > max ? n : max;
-    }, 0);
-    return ultimo + 1;
-  }
-
-  function generarIdMovimiento(movimientos) {
-    const ultimo = movimientos.reduce((max, m) => {
-      const n = Number(m.id_mov) || 0;
-      return n > max ? n : max;
-    }, 0);
-    return ultimo + 1;
-  }
 
   function money(valor) {
     return Number(valor || 0).toFixed(2);
   }
 
   function calcularPrecioConIVA(precio) {
-  return Number(precio || 0) * (1 + IVA);
-}
+    return Number(precio || 0) * (1 + IVA);
+  }
+
+  async function apiFetch(endpoint, options = {}) {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
+      ...options
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.message || "Error en la petición");
+    }
+
+    if (data?.success === false) {
+      throw new Error(data.message || "Ocurrió un error");
+    }
+
+    return data;
+  }
+
+  async function getVentasAPI() {
+    const res = await apiFetch("/api/ventas/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getVentaAPI(idVenta) {
+    const res = await apiFetch(`/api/ventas/${idVenta}`);
+    return res.data || null;
+  }
+
+  async function crearVentaAPI(payload) {
+    return await apiFetch("/api/ventas/", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function actualizarVentaAPI(idVenta, payload) {
+    return await apiFetch(`/api/ventas/${idVenta}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  async function eliminarVentaAPI(idVenta) {
+    return await apiFetch(`/api/ventas/${idVenta}`, {
+      method: "DELETE"
+    });
+  }
+
+  async function getProductosAPI() {
+    const res = await apiFetch("/api/productos/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getAlmacenesAPI() {
+    const res = await apiFetch("/api/almacenes/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getInventariosAPI() {
+    const res = await apiFetch("/api/inventarios/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getInventarioDetalleAPI(idInventario) {
+    const res = await apiFetch(`/api/inventarios/${idInventario}`);
+    return res.data || null;
+  }
+
+  function normalizarVenta(v) {
+    return {
+      id_venta: Number(v.id_venta),
+      folio: v.folio || "",
+      precio_venta_final: Number(v.precio_venta_final || 0),
+      estado: v.estado ?? null,
+      municipio: v.municipio ?? null
+    };
+  }
+
+  function normalizarDetalleVenta(det) {
+    return {
+      id_detalle_venta: det.id_detalle_venta ?? null,
+      id_producto: Number(det.id_producto),
+      nombre_producto:
+        det.descripcion ||
+        det.descripcion_producto ||
+        det.nombre_producto ||
+        det.folio_producto ||
+        `Producto ${det.id_producto}`,
+      cantidad_vendida: Number(det.cantidad_vendida || 0),
+      precio_venta: Number(det.precio_venta || 0)
+    };
+  }
+
+  function obtenerCodigoEstadoPorNombre(nombreEstado) {
+    if (!nombreEstado) return "";
+    const encontrado = ESTADOS.find(
+      (e) => norm(e.nombre).toLowerCase() === norm(nombreEstado).toLowerCase()
+    );
+    return encontrado ? encontrado.id : "";
+  }
+
+  function obtenerCodigoMunicipioPorNombre(codigoEstado, nombreMunicipio) {
+    if (!codigoEstado || !nombreMunicipio || !MUNICIPIOS[codigoEstado]) return "";
+    const encontrado = MUNICIPIOS[codigoEstado].find(
+      (m) => norm(m.nombre).toLowerCase() === norm(nombreMunicipio).toLowerCase()
+    );
+    return encontrado ? encontrado.id : "";
+  }
 
   function cargarEstados() {
     if (!selectEstado) return;
@@ -179,7 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     MUNICIPIOS[idEstado].forEach((municipio) => {
       selectMunicipio.innerHTML += `
-        <option value="${municipio.id}" ${municipio.id === municipioSeleccionado ? "selected" : ""}>
+        <option value="${municipio.id}" ${String(municipio.id) === String(municipioSeleccionado) ? "selected" : ""}>
           ${municipio.nombre}
         </option>
       `;
@@ -187,52 +246,55 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function cargarProductos() {
-  if (!selectProductoVenta) return;
+    if (!selectProductoVenta) return;
 
-  const productos = getProductos();
+    selectProductoVenta.innerHTML = "";
 
-  selectProductoVenta.innerHTML = "";
+    const optionDefault = document.createElement("option");
+    optionDefault.value = "";
+    optionDefault.textContent = "Elegir producto...";
+    selectProductoVenta.appendChild(optionDefault);
 
-  const optionDefault = document.createElement("option");
-  optionDefault.value = "";
-  optionDefault.textContent = "Elegir producto...";
-  selectProductoVenta.appendChild(optionDefault);
+    productosCache.forEach((p) => {
+      const option = document.createElement("option");
+      option.value = p.id_producto;
+      option.textContent =
+        p.descripcion ||
+        p.descripcion_producto ||
+        p.nombre_producto ||
+        `Producto ${p.id_producto}`;
+      option.setAttribute(
+        "data-precio",
+        Number(p.precio ?? p.precio_producto ?? 0)
+      );
+      selectProductoVenta.appendChild(option);
+    });
+  }
 
-  productos.forEach((p) => {
-    const option = document.createElement("option");
-    option.value = p.codigo;
-    option.textContent = p.descripcion;
-    option.setAttribute("data-precio", Number(p.precio) || 0);
-    selectProductoVenta.appendChild(option);
-  });
-}
+  function getOpcionesProductosHTML(idSeleccionado = "") {
+    return `
+      <option value="">Elegir producto...</option>
+      ${productosCache.map((p) => `
+        <option
+          value="${p.id_producto}"
+          data-precio="${Number(p.precio ?? p.precio_producto ?? 0)}"
+          ${String(p.id_producto) === String(idSeleccionado) ? "selected" : ""}
+        >
+          ${p.descripcion || p.descripcion_producto || p.nombre_producto || `Producto ${p.id_producto}`}
+        </option>
+      `).join("")}
+    `;
+  }
 
   function calcularTotalTemporal() {
     const total = detalleVentaTemporal.reduce((acc, item) => {
       const precioConIVA = calcularPrecioConIVA(item.precio_venta);
-      return acc + (Number(item.cantidad_vendida) * precioConIVA);
+      return acc + Number(item.cantidad_vendida) * precioConIVA;
     }, 0);
 
     totalVenta.textContent = money(total);
     return total;
   }
-
-  function getOpcionesProductosHTML(idSeleccionado = "") {
-  const productos = getProductos();
-
-  return `
-    <option value="">Elegir producto...</option>
-    ${productos.map((p) => `
-      <option 
-        value="${p.codigo}" 
-        data-precio="${Number(p.precio) || 0}"
-        ${String(p.codigo) === String(idSeleccionado) ? "selected" : ""}
-      >
-        ${p.descripcion}
-      </option>
-    `).join("")}
-  `;
-}
 
   function renderDetalleTemporal() {
     if (!tbodyDetalleVenta) return;
@@ -253,40 +315,41 @@ document.addEventListener("DOMContentLoaded", () => {
       const importe = Number(item.cantidad_vendida) * precioConIVA;
 
       if (modo === "edit") {
-      return `
-        <tr data-index="${index}">
-          <td>
-            <select class="form-control form-control-sm detalle-producto">
-              ${getOpcionesProductosHTML(item.id_producto)}
-            </select>
-          </td>
-          <td>
-            <input 
-              type="number" 
-              min="1" 
-              class="form-control form-control-sm detalle-cantidad" 
-              value="${Number(item.cantidad_vendida) || 1}"
-            >
-          </td>
-          <td>
-            <input 
-              type="number" 
-              min="0" 
-              step="0.01" 
-              class="form-control form-control-sm detalle-precio" 
-              value="${precioBase}"
-            >
-          </td>
-          <td class="detalle-precio-iva">$${money(precioConIVA)}</td>
-          <td class="detalle-importe">$${money(importe)}</td>
-          <td>
-            <button type="button" class="btn btn-danger btn-sm btn-quitar-detalle">
-              Quitar
-            </button>
-          </td>
-        </tr>
-      `;
-    }
+        return `
+          <tr data-index="${index}">
+            <td>
+              <select class="form-control form-control-sm detalle-producto">
+                ${getOpcionesProductosHTML(item.id_producto)}
+              </select>
+            </td>
+            <td>
+              <input
+                type="number"
+                min="1"
+                class="form-control form-control-sm detalle-cantidad"
+                value="${Number(item.cantidad_vendida) || 1}"
+              >
+            </td>
+            <td>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                class="form-control form-control-sm detalle-precio"
+                value="${precioBase}"
+              >
+            </td>
+            <td class="detalle-precio-iva">$${money(precioConIVA)}</td>
+            <td class="detalle-importe">$${money(importe)}</td>
+            <td>
+              <button type="button" class="btn btn-danger btn-sm btn-quitar-detalle">
+                Quitar
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+
       return `
         <tr data-index="${index}">
           <td>${item.nombre_producto}</td>
@@ -307,104 +370,80 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function recalcularImporteFila(tr) {
-  const index = Number(tr.getAttribute("data-index"));
-  const item = detalleVentaTemporal[index];
-  if (!item) return;
+    const index = Number(tr.getAttribute("data-index"));
+    const item = detalleVentaTemporal[index];
+    if (!item) return;
 
-  const precioBase = Number(item.precio_venta) || 0;
-  const precioConIVA = calcularPrecioConIVA(precioBase);
-  const importe = Number(item.cantidad_vendida) * precioConIVA;
+    const precioBase = Number(item.precio_venta) || 0;
+    const precioConIVA = calcularPrecioConIVA(precioBase);
+    const importe = Number(item.cantidad_vendida) * precioConIVA;
 
-  const celdaPrecioIVA = tr.querySelector(".detalle-precio-iva");
-  const celdaImporte = tr.querySelector(".detalle-importe");
+    const celdaPrecioIVA = tr.querySelector(".detalle-precio-iva");
+    const celdaImporte = tr.querySelector(".detalle-importe");
 
-  if (celdaPrecioIVA) {
-    celdaPrecioIVA.textContent = `$${money(precioConIVA)}`;
+    if (celdaPrecioIVA) celdaPrecioIVA.textContent = `$${money(precioConIVA)}`;
+    if (celdaImporte) celdaImporte.textContent = `$${money(importe)}`;
+
+    calcularTotalTemporal();
   }
 
-  if (celdaImporte) {
-    celdaImporte.textContent = `$${money(importe)}`;
+  function actualizarDetalleDesdeFila(tr) {
+    const index = Number(tr.getAttribute("data-index"));
+    const item = detalleVentaTemporal[index];
+    if (!item) return;
+
+    const selectProducto = tr.querySelector(".detalle-producto");
+    const inputCantidad = tr.querySelector(".detalle-cantidad");
+    const inputPrecio = tr.querySelector(".detalle-precio");
+
+    if (selectProducto) {
+      const option = selectProducto.options[selectProducto.selectedIndex];
+      item.id_producto = Number(selectProducto.value);
+      item.nombre_producto = option?.text || "";
+    }
+
+    if (inputCantidad) {
+      item.cantidad_vendida = Number(inputCantidad.value) || 0;
+    }
+
+    if (inputPrecio) {
+      item.precio_venta = Number(inputPrecio.value) || 0;
+    }
+
+    recalcularImporteFila(tr);
   }
-
-  calcularTotalTemporal();
-}
-
-function actualizarDetalleDesdeFila(tr) {
-  const index = Number(tr.getAttribute("data-index"));
-  const item = detalleVentaTemporal[index];
-  if (!item) return;
-
-  const selectProducto = tr.querySelector(".detalle-producto");
-  const inputCantidad = tr.querySelector(".detalle-cantidad");
-  const inputPrecio = tr.querySelector(".detalle-precio");
-
-  if (selectProducto) {
-    const option = selectProducto.options[selectProducto.selectedIndex];
-    item.id_producto = norm(selectProducto.value);
-    item.nombre_producto = option?.text || "";
-  }
-
-  if (inputCantidad) {
-    item.cantidad_vendida = Number(inputCantidad.value) || 0;
-  }
-
-  if (inputPrecio) {
-    item.precio_venta = Number(inputPrecio.value) || 0;
-  }
-
-  recalcularImporteFila(tr);
-}
-
-  function resetFormulario() {
-  detalleVentaTemporal = [];
-  modo = "create";
-  idVentaEditando = null;
-
-  form.reset();
-
-  totalVenta.textContent = "0.00";
-  renderDetalleTemporal();
-
-  const ventas = getVentas();
-  inpFolio.value = generarFolioVenta(ventas);
-
-  if (selectEstado) selectEstado.value = "";
-  if (selectMunicipio) {
-    selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
-  }
-
-  if (selectProductoVenta) {
-    cargarProductos();
-    selectProductoVenta.value = "";
-  }
-
-  if (inpCantidadVenta) inpCantidadVenta.value = "";
-  if (inpPrecioVenta) inpPrecioVenta.value = "";
-}
 
   function renderTabla(filtro = "") {
     const f = norm(filtro).toLowerCase();
-    const ventas = getVentas();
 
     const lista = !f
-      ? ventas
-      : ventas.filter((v) => {
+      ? ventasCache
+      : ventasCache.filter((v) => {
           const texto = `
             ${v.folio}
             ${v.precio_venta_final}
-            ${v.nombre_estado}
-            ${v.nombre_municipio}
+            ${v.estado || ""}
+            ${v.municipio || ""}
           `.toLowerCase();
 
           return texto.includes(f);
         });
 
+    if (!lista.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="text-center text-muted">No hay ventas registradas.</td>
+        </tr>
+      `;
+      return;
+    }
+
     tbody.innerHTML = lista.map((v) => `
       <tr data-id="${v.id_venta}">
         <td>${v.folio}</td>
         <td>$${money(v.precio_venta_final)}</td>
-        <td>${v.nombre_estado || ""}</td>
-        <td>${v.nombre_municipio || ""}</td>
+        <td>${v.estado || ""}</td>
+        <td>${v.municipio || ""}</td>
         <td>
           <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle">
             <i class="fas fa-eye"></i>
@@ -420,227 +459,368 @@ function actualizarDetalleDesdeFila(tr) {
     `).join("");
   }
 
-  function buscarInventarioDisponible(inventarios, idProducto, cantidadRequerida, idInventarioPreferido = "") {
-    const cantidad = Number(cantidadRequerida) || 0;
-
-    if (idInventarioPreferido) {
-      const idxPreferido = inventarios.findIndex(
-        (inv) =>
-          inv.id_inventario === idInventarioPreferido &&
-          inv.id_producto === idProducto &&
-          Number(inv.stock) >= cantidad
-      );
-
-      if (idxPreferido !== -1) return idxPreferido;
-    }
-
-    return inventarios.findIndex(
-      (inv) =>
-        inv.id_producto === idProducto &&
-        Number(inv.stock) >= cantidad
-    );
+  function generarFolioVenta() {
+    const numero = ventasCache.length + 1;
+    return `VTA-${String(numero).padStart(3, "0")}`;
   }
 
-  function validarStockDetalle(detalle) {
-    const inventarios = getInventarios().map((inv) => ({ ...inv }));
+  function resetFormulario() {
+    detalleVentaTemporal = [];
+    modo = "create";
+    idVentaEditando = null;
 
-    for (const item of detalle) {
-      const idx = buscarInventarioDisponible(
-        inventarios,
-        item.id_producto,
-        item.cantidad_vendida,
-        item.id_inventario_origen || ""
-      );
+    if (form) form.reset();
 
-      if (idx === -1) {
-        throw new Error(`No hay stock suficiente para ${item.nombre_producto}.`);
-      }
-
-      inventarios[idx].stock =
-        Number(inventarios[idx].stock) - Number(item.cantidad_vendida);
-    }
-
-    return true;
-  }
-
-  function aplicarDetalleEnInventarioYMovimientos(idVenta, folio, detalle) {
-    const inventarios = getInventarios();
-    const movimientos = getMovimientos();
-
-    let siguienteIdMov = generarIdMovimiento(movimientos);
-
-    detalle.forEach((item) => {
-      const idxInventario = buscarInventarioDisponible(
-        inventarios,
-        item.id_producto,
-        item.cantidad_vendida,
-        item.id_inventario_origen || ""
-      );
-
-      if (idxInventario === -1) {
-        throw new Error(`No hay stock suficiente para ${item.nombre_producto}.`);
-      }
-
-      const inv = inventarios[idxInventario];
-      const cantidad = Number(item.cantidad_vendida);
-      const stockActual = Number(inv.stock) || 0;
-
-      if (cantidad > stockActual) {
-        throw new Error(`La venta excede el stock disponible de ${item.nombre_producto}.`);
-      }
-
-      inv.stock = stockActual - cantidad;
-
-      item.id_inventario_origen = inv.id_inventario;
-      item.id_almacen = inv.id_almacen;
-      item.nombre_almacen = inv.nombre_almacen;
-
-      movimientos.push({
-        id_mov: siguienteIdMov++,
-        tipo: false,
-        cantidad,
-        id_venta: idVenta,
-        id_producto: item.id_producto,
-        id_almacen: inv.id_almacen,
-        id_inventario: inv.id_inventario,
-        nombre_producto: item.nombre_producto,
-        nombre_almacen: inv.nombre_almacen,
-        fecha: new Date().toISOString().slice(0, 16),
-        folio_venta: folio
-      });
-    });
-
-    setInventarios(inventarios);
-    setMovimientos(movimientos);
-  }
-
-  function revertirVentaEnInventarioYMovimientos(idVenta) {
-    const inventarios = getInventarios();
-    const movimientos = getMovimientos();
-
-    const movimientosVenta = movimientos.filter(
-      (m) => Number(m.id_venta) === Number(idVenta)
-    );
-
-    movimientosVenta.forEach((mov) => {
-      const idxInventario = inventarios.findIndex(
-        (inv) =>
-          inv.id_inventario === mov.id_inventario ||
-          (inv.id_producto === mov.id_producto && inv.id_almacen === mov.id_almacen)
-      );
-
-      if (idxInventario !== -1) {
-        inventarios[idxInventario].stock =
-          Number(inventarios[idxInventario].stock || 0) + Number(mov.cantidad || 0);
-      }
-    });
-
-    const nuevosMovimientos = movimientos.filter(
-      (m) => Number(m.id_venta) !== Number(idVenta)
-    );
-
-    setInventarios(inventarios);
-    setMovimientos(nuevosMovimientos);
-  }
-
-  function abrirDetalle(venta) {
-    const detalleFolioVenta = document.getElementById("detalleFolioVenta");
-    const detalleTotalVenta = document.getElementById("detalleTotalVenta");
-    const detalleEstadoVenta = document.getElementById("detalleEstadoVenta");
-    const detalleMunicipioVenta = document.getElementById("detalleMunicipioVenta");
-    const detalleItemsVenta = document.getElementById("detalleItemsVenta");
-
-    const detalles = getDetalleVentas().filter(
-      (d) => Number(d.id_venta) === Number(venta.id_venta)
-    );
-
-    detalleFolioVenta.textContent = venta.folio || "";
-    detalleTotalVenta.textContent = money(venta.precio_venta_final);
-    detalleEstadoVenta.textContent = venta.nombre_estado || "";
-    detalleMunicipioVenta.textContent = venta.nombre_municipio || "";
-
-    if (detalles.length === 0) {
-      detalleItemsVenta.innerHTML = `<div class="text-muted">No hay productos registrados.</div>`;
-    } else {
-      detalleItemsVenta.innerHTML = `
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm text-center mb-0">
-            <thead class="thead-light">
-              <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Precio</th>
-                <th>Precio con IVA</th>
-                <th>Importe</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${detalles.map((d) => {
-                const precioBase = Number(d.precio_venta) || 0;
-                const precioConIVA = Number(d.precio_venta_con_iva) || calcularPrecioConIVA(precioBase);
-                const importe = Number(d.cantidad_vendida) * precioConIVA;
-
-                return `
-                <tr>
-                  <td>${d.nombre_producto}</td>
-                  <td>${d.cantidad_vendida}</td>
-                  <td>$${money(precioBase)}</td>
-                  <td>$${money(precioConIVA)}</td>
-                  <td>$${money(importe)}</td>
-                </tr>
-              `;
-              }).join("")}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    $("#modalDetalleVenta").modal("show");
-  }
-
-  function abrirEditar(venta) {
-    cargarProductos();
-    const detalles = getDetalleVentas().filter(
-      (d) => Number(d.id_venta) === Number(venta.id_venta)
-    );
-
-    modo = "edit";
-    idVentaEditando = venta.id_venta;
-
-    inpFolio.value = venta.folio || "";
-    selectEstado.value = venta.id_estado || "";
-    cargarMunicipios(venta.id_estado || "", venta.id_municipio || "");
-    selectMunicipio.value = venta.id_municipio || "";
-
-    detalleVentaTemporal = detalles.map((d) => ({
-      id_producto: d.id_producto,
-      nombre_producto: d.nombre_producto,
-      cantidad_vendida: Number(d.cantidad_vendida),
-      precio_venta: Number(d.precio_venta),
-      id_inventario_origen: d.id_inventario_origen || "",
-      id_almacen: d.id_almacen || "",
-      nombre_almacen: d.nombre_almacen || ""
-    }));
-
-selectEstado.value = venta.id_estado || "";
-
-cargarMunicipios(venta.id_estado || "", venta.id_municipio || "");
-
-selectMunicipio.value = venta.id_municipio || "";
-
+    totalVenta.textContent = "0.00";
     renderDetalleTemporal();
 
-    tituloModal.textContent = `Editar Venta ${venta.folio}`;
-    btnGuardar.textContent = "Guardar Cambios";
+    inpFolio.value = generarFolioVenta();
 
-    $("#modalNuevaVenta").modal("show");
+    if (selectEstado) selectEstado.value = "";
+    if (selectMunicipio) {
+      selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
+    }
+
+    if (selectProductoVenta) {
+      cargarProductos();
+      selectProductoVenta.value = "";
+    }
+
+    if (inpCantidadVenta) inpCantidadVenta.value = "";
+    if (inpPrecioVenta) inpPrecioVenta.value = "";
   }
 
-  cargarProductos();
-  cargarEstados();
-  renderTabla();
-  resetFormulario();
+  function resolverProductoPorCoincidencia({ idProducto, folioProducto, descripcionProducto }) {
+    if (Number.isFinite(Number(idProducto))) {
+      const porId = productosCache.find(
+        (p) => Number(p.id_producto) === Number(idProducto)
+      );
+      if (porId) return porId;
+    }
+
+    const folioNorm = norm(folioProducto).toLowerCase();
+    if (folioNorm) {
+      const porFolio = productosCache.find((p) => {
+        const posiblesFolios = [
+          p.folio,
+          p.folio_producto,
+          p.codigo
+        ].map((x) => norm(x).toLowerCase()).filter(Boolean);
+
+        return posiblesFolios.includes(folioNorm);
+      });
+      if (porFolio) return porFolio;
+    }
+
+    const descripcionNorm = norm(descripcionProducto).toLowerCase();
+    if (descripcionNorm) {
+      const porDescripcion = productosCache.find((p) => {
+        const posiblesDescripciones = [
+          p.descripcion,
+          p.descripcion_producto,
+          p.nombre_producto,
+          p.nombre
+        ].map((x) => norm(x).toLowerCase()).filter(Boolean);
+
+        return posiblesDescripciones.includes(descripcionNorm);
+      });
+      if (porDescripcion) return porDescripcion;
+    }
+
+    return null;
+  }
+
+  function resolverAlmacenPorCoincidencia({ idAlmacen, folioAlmacen, nombreAlmacen }) {
+    if (Number.isFinite(Number(idAlmacen))) {
+      const porId = almacenesCache.find(
+        (a) => Number(a.id_almacen) === Number(idAlmacen)
+      );
+      if (porId) return porId;
+    }
+
+    const folioNorm = norm(folioAlmacen).toLowerCase();
+    if (folioNorm) {
+      const porFolio = almacenesCache.find((a) => {
+        const posiblesFolios = [
+          a.folio,
+          a.folio_almacen,
+          a.codigo
+        ].map((x) => norm(x).toLowerCase()).filter(Boolean);
+
+        return posiblesFolios.includes(folioNorm);
+      });
+      if (porFolio) return porFolio;
+    }
+
+    const nombreNorm = norm(nombreAlmacen).toLowerCase();
+    if (nombreNorm) {
+      const porNombre = almacenesCache.find((a) => {
+        const posiblesNombres = [
+          a.nombre,
+          a.nombre_almacen,
+          a.descripcion
+        ].map((x) => norm(x).toLowerCase()).filter(Boolean);
+
+        return posiblesNombres.includes(nombreNorm);
+      });
+      if (porNombre) return porNombre;
+    }
+
+    return null;
+  }
+
+  function enriquecerInventario(base, detalle) {
+    const idProductoDirecto = Number(detalle?.id_producto ?? base?.id_producto);
+    const idAlmacenDirecto = Number(detalle?.id_almacen ?? base?.id_almacen);
+
+    let producto = null;
+    let almacen = null;
+
+    if (Number.isFinite(idProductoDirecto)) {
+      producto = productosCache.find(
+        (p) => Number(p.id_producto) === idProductoDirecto
+      );
+    }
+
+    if (!producto) {
+      producto = resolverProductoPorCoincidencia({
+        idProducto: detalle?.id_producto ?? base?.id_producto,
+        folioProducto: detalle?.folio_producto ?? base?.folio_producto,
+        descripcionProducto:
+          detalle?.descripcion_producto ??
+          base?.descripcion_producto ??
+          base?.nombre_producto
+      });
+    }
+
+    if (Number.isFinite(idAlmacenDirecto)) {
+      almacen = almacenesCache.find(
+        (a) => Number(a.id_almacen) === idAlmacenDirecto
+      );
+    }
+
+    if (!almacen) {
+      almacen = resolverAlmacenPorCoincidencia({
+        idAlmacen: detalle?.id_almacen ?? base?.id_almacen,
+        folioAlmacen: detalle?.folio_almacen ?? base?.folio_almacen,
+        nombreAlmacen:
+          detalle?.nombre_almacen ??
+          base?.nombre_almacen
+      });
+    }
+
+    return {
+      ...base,
+      ...detalle,
+      id_producto: producto ? Number(producto.id_producto) : Number(base?.id_producto),
+      id_almacen: almacen ? Number(almacen.id_almacen) : Number(base?.id_almacen),
+      descripcion_producto:
+        detalle?.descripcion_producto ??
+        base?.descripcion_producto ??
+        producto?.descripcion ??
+        producto?.descripcion_producto ??
+        producto?.nombre_producto ??
+        "",
+      nombre_almacen:
+        detalle?.nombre_almacen ??
+        base?.nombre_almacen ??
+        almacen?.nombre ??
+        almacen?.nombre_almacen ??
+        "",
+      stock: Number(base?.stock ?? detalle?.stock ?? 0)
+    };
+  }
+
+  async function refrescarCatalogos() {
+    const [productos, almacenes, inventariosBase] = await Promise.all([
+      getProductosAPI(),
+      getAlmacenesAPI(),
+      getInventariosAPI()
+    ]);
+
+    productosCache = productos;
+    almacenesCache = almacenes;
+
+    const detallesInventario = await Promise.all(
+      inventariosBase.map((inv) =>
+        getInventarioDetalleAPI(inv.id_inventario).catch(() => null)
+      )
+    );
+
+    inventariosCache = inventariosBase.map((inv, index) =>
+      enriquecerInventario(inv, detallesInventario[index])
+    );
+  }
+
+  async function refrescarVentas() {
+    const ventas = await getVentasAPI();
+    ventasCache = ventas.map(normalizarVenta);
+  }
+
+  function construirPayloadDetalle() {
+    const inventariosTrabajo = inventariosCache.map((inv) => ({
+      ...inv,
+      stock: Number(inv.stock || 0)
+    }));
+
+    return detalleVentaTemporal.map((item) => {
+      const cantidad = Number(item.cantidad_vendida || 0);
+      const idProducto = Number(item.id_producto);
+
+      const candidatos = inventariosTrabajo
+        .filter((inv) => Number(inv.id_producto) === idProducto)
+        .sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0));
+
+      if (!candidatos.length) {
+        throw new Error(`No hay inventario registrado para ${item.nombre_producto}.`);
+      }
+
+      const elegido =
+        candidatos.find((inv) => Number(inv.stock || 0) >= cantidad) ||
+        candidatos[0];
+
+      if (!Number.isFinite(Number(elegido.id_almacen))) {
+        throw new Error(`No se pudo resolver el almacén para ${item.nombre_producto}.`);
+      }
+
+      elegido.stock = Number(elegido.stock || 0) - cantidad;
+
+      return {
+        id_producto: idProducto,
+        cantidad_vendida: cantidad,
+        precio_venta: Number(item.precio_venta || 0),
+        id_almacen: Number(elegido.id_almacen)
+      };
+    });
+  }
+
+  function buildVentaPayload() {
+    const folio = norm(inpFolio.value);
+    const total = calcularTotalTemporal();
+
+    return {
+      folio,
+      precio_venta_final: total,
+      id_estado: selectEstado ? Number(selectEstado.value) || null : null,
+      id_municipio: selectMunicipio ? Number(selectMunicipio.value) || null : null,
+      detalle: construirPayloadDetalle()
+    };
+  }
+
+  async function abrirDetalle(venta) {
+    try {
+      const ventaDetalle = await getVentaAPI(venta.id_venta);
+
+      if (!ventaDetalle) {
+        alert("No se pudo obtener el detalle de la venta");
+        return;
+      }
+
+      const ventaNormalizada = normalizarVenta(ventaDetalle);
+      const detalles = Array.isArray(ventaDetalle.detalle)
+        ? ventaDetalle.detalle.map(normalizarDetalleVenta)
+        : [];
+
+      const detalleFolioVenta = document.getElementById("detalleFolioVenta");
+      const detalleTotalVenta = document.getElementById("detalleTotalVenta");
+      const detalleEstadoVenta = document.getElementById("detalleEstadoVenta");
+      const detalleMunicipioVenta = document.getElementById("detalleMunicipioVenta");
+      const detalleItemsVenta = document.getElementById("detalleItemsVenta");
+
+      detalleFolioVenta.textContent = ventaNormalizada.folio || "";
+      detalleTotalVenta.textContent = money(ventaNormalizada.precio_venta_final);
+      detalleEstadoVenta.textContent = ventaNormalizada.estado || "";
+      detalleMunicipioVenta.textContent = ventaNormalizada.municipio || "";
+
+      if (!detalles.length) {
+        detalleItemsVenta.innerHTML = `<div class="text-muted">No hay productos registrados.</div>`;
+      } else {
+        detalleItemsVenta.innerHTML = `
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm text-center mb-0">
+              <thead class="thead-light">
+                <tr>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Precio</th>
+                  <th>Precio con IVA</th>
+                  <th>Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${detalles.map((d) => {
+                  const precioBase = Number(d.precio_venta) || 0;
+                  const precioConIVA = calcularPrecioConIVA(precioBase);
+                  const importe = Number(d.cantidad_vendida) * precioConIVA;
+
+                  return `
+                    <tr>
+                      <td>${d.nombre_producto}</td>
+                      <td>${d.cantidad_vendida}</td>
+                      <td>$${money(precioBase)}</td>
+                      <td>$${money(precioConIVA)}</td>
+                      <td>$${money(importe)}</td>
+                    </tr>
+                  `;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      $("#modalDetalleVenta").modal("show");
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  async function abrirEditar(venta) {
+    try {
+      const ventaDetalle = await getVentaAPI(venta.id_venta);
+
+      if (!ventaDetalle) {
+        alert("No se pudo obtener el detalle de la venta");
+        return;
+      }
+
+      modo = "edit";
+      idVentaEditando = Number(ventaDetalle.id_venta);
+
+      const ventaNormalizada = normalizarVenta(ventaDetalle);
+      const detalles = Array.isArray(ventaDetalle.detalle)
+        ? ventaDetalle.detalle.map(normalizarDetalleVenta)
+        : [];
+
+      inpFolio.value = ventaNormalizada.folio || "";
+
+      const codigoEstado = obtenerCodigoEstadoPorNombre(ventaNormalizada.estado);
+      const codigoMunicipio = obtenerCodigoMunicipioPorNombre(
+        codigoEstado,
+        ventaNormalizada.municipio
+      );
+
+      selectEstado.value = codigoEstado || "";
+      cargarMunicipios(codigoEstado || "", codigoMunicipio || "");
+      selectMunicipio.value = codigoMunicipio || "";
+
+      detalleVentaTemporal = detalles.map((d) => ({
+        id_producto: Number(d.id_producto),
+        nombre_producto: d.nombre_producto,
+        cantidad_vendida: Number(d.cantidad_vendida),
+        precio_venta: Number(d.precio_venta)
+      }));
+
+      renderDetalleTemporal();
+
+      tituloModal.textContent = `Editar Venta ${ventaNormalizada.folio}`;
+      btnGuardar.textContent = "Guardar Cambios";
+
+      $("#modalNuevaVenta").modal("show");
+    } catch (error) {
+      alert(error.message);
+    }
+  }
 
   if (selectEstado) {
     selectEstado.addEventListener("change", () => {
@@ -648,7 +828,7 @@ selectMunicipio.value = venta.id_municipio || "";
         selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
         return;
       }
-      
+
       cargarMunicipios(selectEstado.value);
     });
   }
@@ -665,8 +845,10 @@ selectMunicipio.value = venta.id_municipio || "";
   }
 
   if (btnAgregarDetalle) {
-    btnAgregarDetalle.addEventListener("click", () => {
-      const idProducto = norm(selectProductoVenta.value);
+    btnAgregarDetalle.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const idProducto = Number(selectProductoVenta.value);
       const cantidad = Number(inpCantidadVenta.value);
       const precio = Number(inpPrecioVenta.value);
 
@@ -689,7 +871,7 @@ selectMunicipio.value = venta.id_municipio || "";
       }
 
       const idxExistente = detalleVentaTemporal.findIndex(
-        (item) => String(item.id_producto) === String(idProducto)
+        (item) => Number(item.id_producto) === Number(idProducto)
       );
 
       if (idxExistente !== -1) {
@@ -701,8 +883,7 @@ selectMunicipio.value = venta.id_municipio || "";
           id_producto: idProducto,
           nombre_producto: nombreProducto,
           cantidad_vendida: cantidad,
-          precio_venta: precio,
-          id_inventario_origen: ""
+          precio_venta: precio
         });
       }
 
@@ -727,65 +908,71 @@ selectMunicipio.value = venta.id_municipio || "";
       renderDetalleTemporal();
     });
 
-  tbodyDetalleVenta.addEventListener("change", (e) => {
-    const tr = e.target.closest("tr");
-    if (!tr) return;
+    tbodyDetalleVenta.addEventListener("change", (e) => {
+      const tr = e.target.closest("tr");
+      if (!tr) return;
 
-    if (e.target.classList.contains("detalle-producto")) {
-      const index = Number(tr.getAttribute("data-index"));
-      const item = detalleVentaTemporal[index];
-      if (!item) return;
+      if (e.target.classList.contains("detalle-producto")) {
+        const index = Number(tr.getAttribute("data-index"));
+        const item = detalleVentaTemporal[index];
+        if (!item) return;
 
-      const select = e.target;
-      const option = select.options[select.selectedIndex];
-      const nuevoIdProducto = norm(select.value);
+        const select = e.target;
+        const option = select.options[select.selectedIndex];
+        const nuevoIdProducto = Number(select.value);
 
-      if (!nuevoIdProducto) return;
+        if (!nuevoIdProducto) return;
 
-      const existeRepetido = detalleVentaTemporal.some((prod, i) =>
-        i !== index && String(prod.id_producto) === String(nuevoIdProducto)
-      );
+        const existeRepetido = detalleVentaTemporal.some(
+          (prod, i) =>
+            i !== index && Number(prod.id_producto) === Number(nuevoIdProducto)
+        );
 
-      if (existeRepetido) {
-        alert("Ese producto ya está agregado en la venta.");
-        select.value = item.id_producto;
-        return;
+        if (existeRepetido) {
+          alert("Ese producto ya está agregado en la venta.");
+          select.value = item.id_producto;
+          return;
+        }
+
+        item.id_producto = nuevoIdProducto;
+        item.nombre_producto = option?.text || "";
+        item.precio_venta = Number(option?.getAttribute("data-precio") || 0);
+
+        const inputPrecio = tr.querySelector(".detalle-precio");
+        if (inputPrecio) {
+          inputPrecio.value = item.precio_venta;
+        }
+
+        actualizarDetalleDesdeFila(tr);
       }
+    });
 
-      item.id_producto = nuevoIdProducto;
-      item.nombre_producto = option?.text || "";
-      item.precio_venta = Number(option?.getAttribute("data-precio") || 0);
+    tbodyDetalleVenta.addEventListener("input", (e) => {
+      const tr = e.target.closest("tr");
+      if (!tr) return;
 
-      const inputPrecio = tr.querySelector(".detalle-precio");
-      if (inputPrecio) {
-        inputPrecio.value = item.precio_venta;
+      if (
+        e.target.classList.contains("detalle-cantidad") ||
+        e.target.classList.contains("detalle-precio")
+      ) {
+        actualizarDetalleDesdeFila(tr);
       }
+    });
+  }
 
-      actualizarDetalleDesdeFila(tr);
-    }
-  });
+  $(modalRegistro).on("shown.bs.modal", async function () {
+    try {
+      await refrescarCatalogos();
+      cargarProductos();
+      cargarEstados();
 
-  tbodyDetalleVenta.addEventListener("input", (e) => {
-    const tr = e.target.closest("tr");
-    if (!tr) return;
-
-    if (
-      e.target.classList.contains("detalle-cantidad") ||
-      e.target.classList.contains("detalle-precio")
-    ) {
-      actualizarDetalleDesdeFila(tr);
-    }
-  });
-}
-
-  $(modalRegistro).on("shown.bs.modal", function () {
-    cargarProductos();
-    cargarEstados();
-
-    if (modo !== "edit") {
-      resetFormulario();
-      tituloModal.textContent = "Registrar Venta";
-      btnGuardar.textContent = "Guardar Venta";
+      if (modo !== "edit") {
+        resetFormulario();
+        tituloModal.textContent = "Registrar Venta";
+        btnGuardar.textContent = "Guardar Venta";
+      }
+    } catch (error) {
+      alert(error.message);
     }
   });
 
@@ -796,171 +983,88 @@ selectMunicipio.value = venta.id_municipio || "";
   });
 
   if (btnGuardar) {
-    btnGuardar.addEventListener("click", (e) => {
+    btnGuardar.addEventListener("click", async (e) => {
       e.preventDefault();
 
       const folio = norm(inpFolio.value);
-      const estado = norm(selectEstado.value) || null;
-      const municipio = norm(selectMunicipio.value)|| null;
-
-      const nombreEstado = estado ? 
-        (selectEstado.options[selectEstado.selectedIndex]?.text || null) :null;
-
-      const nombreMunicipio = municipio ? 
-        (selectMunicipio.options[selectMunicipio.selectedIndex]?.text || null):null;
 
       if (!folio) {
         alert("Completa el folio");
         return;
       }
 
-      if (detalleVentaTemporal.length === 0) {
+      if (!detalleVentaTemporal.length) {
         alert("Agrega al menos un producto a la venta");
         return;
       }
 
-      const ventas = getVentas();
-      const detalles = getDetalleVentas();
+      const textoOriginalBoton = btnGuardar.textContent;
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = "Guardando...";
 
       try {
+        await refrescarCatalogos();
+        await refrescarVentas();
+
+        const payload = buildVentaPayload();
+
         if (modo === "create") {
-          if (ventas.some((v) => norm(v.folio).toUpperCase() === folio.toUpperCase())) {
-            alert("Ese folio ya existe");
-            return;
+          if (
+            ventasCache.some(
+              (v) => norm(v.folio).toUpperCase() === payload.folio.toUpperCase()
+            )
+          ) {
+            throw new Error("Ese folio ya existe");
           }
 
-          validarStockDetalle(detalleVentaTemporal);
+          await crearVentaAPI(payload);
+          alert("Venta registrada correctamente");
+        } else {
+          if (
+            ventasCache.some(
+              (v) =>
+                Number(v.id_venta) !== Number(idVentaEditando) &&
+                norm(v.folio).toUpperCase() === payload.folio.toUpperCase()
+            )
+          ) {
+            throw new Error("Ese folio ya existe");
+          }
 
-          const idVenta = generarIdVenta(ventas);
-          const total = calcularTotalTemporal();
-
-          ventas.push({
-            id_venta: idVenta,
-            folio,
-            precio_venta_final: total,
-            id_estado: estado,
-            nombre_estado: nombreEstado,
-            id_municipio: municipio,
-            nombre_municipio: nombreMunicipio
-          });
-
-          let siguienteIdDetalle = generarIdDetalle(detalles);
-
-          detalleVentaTemporal.forEach((item) => {
-            detalles.push({
-              id_detalle_venta: siguienteIdDetalle++,
-              cantidad_vendida: Number(item.cantidad_vendida),
-              precio_venta: Number(item.precio_venta),
-              precio_venta_con_iva: calcularPrecioConIVA(item.precio_venta),
-              id_venta: idVenta,
-              id_producto: item.id_producto,
-              nombre_producto: item.nombre_producto,
-              id_inventario_origen: item.id_inventario_origen || "",
-              id_almacen: item.id_almacen || "",
-              nombre_almacen: item.nombre_almacen || ""
-            });
-          });
-
-          setVentas(ventas);
-          setDetalleVentas(detalles);
-
-          aplicarDetalleEnInventarioYMovimientos(idVenta, folio, detalleVentaTemporal);
-
-          renderTabla(inputBuscar ? inputBuscar.value : "");
-          resetFormulario();
-          $(modalRegistro).modal("hide");
-          return;
+          await actualizarVentaAPI(idVentaEditando, payload);
+          alert("Venta actualizada correctamente");
         }
 
-        const idxVenta = ventas.findIndex(
-          (v) => Number(v.id_venta) === Number(idVentaEditando)
-        );
-
-        if (idxVenta === -1) {
-          alert("No se encontró la venta a editar");
-          return;
-        }
-
-        if (
-          ventas.some(
-            (v) =>
-              Number(v.id_venta) !== Number(idVentaEditando) &&
-              norm(v.folio).toUpperCase() === folio.toUpperCase()
-          )
-        ) {
-          alert("Ese folio ya existe");
-          return;
-        }
-
-        revertirVentaEnInventarioYMovimientos(idVentaEditando);
-
-        const detallesSinVenta = detalles.filter(
-          (d) => Number(d.id_venta) !== Number(idVentaEditando)
-        );
-
-        validarStockDetalle(detalleVentaTemporal);
-
-        const total = calcularTotalTemporal();
-
-        ventas[idxVenta] = {
-          ...ventas[idxVenta],
-          folio,
-          precio_venta_final: total,
-          id_estado: estado,
-          nombre_estado: nombreEstado,
-          id_municipio: municipio,
-          nombre_municipio: nombreMunicipio
-        };
-
-        let siguienteIdDetalle = generarIdDetalle(detallesSinVenta);
-
-        detalleVentaTemporal.forEach((item) => {
-          detallesSinVenta.push({
-            id_detalle_venta: siguienteIdDetalle++,
-            cantidad_vendida: Number(item.cantidad_vendida),
-            precio_venta: Number(item.precio_venta),
-            precio_venta_con_iva: calcularPrecioConIVA(item.precio_venta),
-            id_venta: idVentaEditando,
-            id_producto: item.id_producto,
-            nombre_producto: item.nombre_producto,
-            id_inventario_origen: item.id_inventario_origen || "",
-            id_almacen: item.id_almacen || "",
-            nombre_almacen: item.nombre_almacen || ""
-          });
-        });
-
-        setVentas(ventas);
-        setDetalleVentas(detallesSinVenta);
-
-        aplicarDetalleEnInventarioYMovimientos(idVentaEditando, folio, detalleVentaTemporal);
-
+        await Promise.all([refrescarCatalogos(), refrescarVentas()]);
         renderTabla(inputBuscar ? inputBuscar.value : "");
         resetFormulario();
         $(modalRegistro).modal("hide");
       } catch (error) {
-        alert(error.message);
+        console.error(error);
+        alert(error.message || "Error al guardar la venta");
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = textoOriginalBoton;
       }
     });
   }
 
   if (tbody) {
-    tbody.addEventListener("click", (e) => {
+    tbody.addEventListener("click", async (e) => {
       const tr = e.target.closest("tr");
       if (!tr) return;
 
       const idVenta = Number(tr.getAttribute("data-id"));
-      const ventas = getVentas();
-      const venta = ventas.find((v) => Number(v.id_venta) === idVenta);
+      const venta = ventasCache.find((v) => Number(v.id_venta) === idVenta);
 
       if (!venta) return;
 
       if (e.target.closest(".btn-detalle")) {
-        abrirDetalle(venta);
+        await abrirDetalle(venta);
         return;
       }
 
       if (e.target.closest(".btn-editar")) {
-        abrirEditar(venta);
+        await abrirEditar(venta);
         return;
       }
 
@@ -968,19 +1072,13 @@ selectMunicipio.value = venta.id_municipio || "";
         if (!confirm(`¿Eliminar la venta ${venta.folio}?`)) return;
 
         try {
-          revertirVentaEnInventarioYMovimientos(idVenta);
-
-          const nuevasVentas = ventas.filter((v) => Number(v.id_venta) !== idVenta);
-          const nuevosDetalles = getDetalleVentas().filter(
-            (d) => Number(d.id_venta) !== idVenta
-          );
-
-          setVentas(nuevasVentas);
-          setDetalleVentas(nuevosDetalles);
-
+          await eliminarVentaAPI(idVenta);
+          await Promise.all([refrescarCatalogos(), refrescarVentas()]);
           renderTabla(inputBuscar ? inputBuscar.value : "");
+          alert("Venta eliminada correctamente");
         } catch (error) {
-          alert(error.message);
+          console.error(error);
+          alert(error.message || "Error al eliminar la venta");
         }
       }
     });
@@ -991,4 +1089,16 @@ selectMunicipio.value = venta.id_municipio || "";
       renderTabla(inputBuscar.value);
     });
   }
+
+  (async function init() {
+    try {
+      await Promise.all([refrescarCatalogos(), refrescarVentas()]);
+      cargarProductos();
+      cargarEstados();
+      renderTabla();
+      resetFormulario();
+    } catch (error) {
+      alert(`Error al cargar datos iniciales: ${error.message}`);
+    }
+  })();
 });

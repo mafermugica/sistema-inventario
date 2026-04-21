@@ -16,19 +16,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputBuscar = document.getElementById("buscarProductos");
   const tituloModal = document.getElementById("tituloModal");
 
+  const btnBuscarProducto  = document.getElementById("btnBuscarProducto");
+  const btnLimpiarBusqueda = document.getElementById("btnLimpiarBusqueda");
+
   const inpCodigo      = document.getElementById("codigoProd");
   const inpDescripcion = document.getElementById("descripcionProd");
   const inpCosto       = document.getElementById("costoProd");
   const inpPrecio      = document.getElementById("precioProd");
 
-  const selectCategoriaProducto     = document.getElementById("selectCategoriaProducto");
-  const listaCategoriasProducto     = document.getElementById("listaCategoriasProducto");
-  const resumenCategoriasProducto   = document.getElementById("resumenCategoriasProducto");
+  const selectCategoriaProducto      = document.getElementById("selectCategoriaProducto");
+  const listaCategoriasProducto      = document.getElementById("listaCategoriasProducto");
+  const resumenCategoriasProducto    = document.getElementById("resumenCategoriasProducto");
 
-  const selectNuevaSubcategoria     = document.getElementById("selectNuevaSubcategoria");
-  const selectValorSubcategoria     = document.getElementById("valorSubcategoria");
-  const inpUnidadSubcategoria       = document.getElementById("unidadSubcategoria");
-  const listaSubcategoriasProducto  = document.getElementById("listaSubcategoriasProducto");
+  const selectNuevaSubcategoria      = document.getElementById("selectNuevaSubcategoria");
+  const selectValorSubcategoria      = document.getElementById("valorSubcategoria");
+  const inpUnidadSubcategoria        = document.getElementById("unidadSubcategoria");
+  const listaSubcategoriasProducto   = document.getElementById("listaSubcategoriasProducto");
   const resumenSubcategoriasProducto = document.getElementById("resumenSubcategoriasProducto");
 
   const catProductoCodigo      = document.getElementById("catProductoCodigo");
@@ -36,23 +39,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const subProductoCodigo      = document.getElementById("subProductoCodigo");
   const subProductoDescripcion = document.getElementById("subProductoDescripcion");
 
-  const modalRegistro    = "#modalNuevoProducto";
-  const modalCategorias  = document.getElementById("modalCategoriasProducto");
+  const modalRegistro      = "#modalNuevoProducto";
+  const modalCategorias    = document.getElementById("modalCategoriasProducto");
   const modalSubcategorias = document.getElementById("modalSubcategoriasProducto");
 
   let modo                    = "create";
   let idEditando              = null;
-  let categoriasTemporales    = []; 
-  let subcategoriasTemporales = []; 
-  let catalogoSubcats         = []; 
-  let productosCache          = []; 
+  let categoriasTemporales    = [];
+  let subcategoriasTemporales = [];
+  let catalogoSubcats         = [];
+  let productosCache          = [];
 
   const norm  = (v) => (v ?? "").toString().trim();
   const money = (v) => Number(v || 0).toFixed(2);
 
   function campo(obj, ...keys) {
     for (const k of keys) {
-      if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+      if (obj?.[k] !== undefined && obj?.[k] !== null) return obj[k];
     }
     return "";
   }
@@ -84,8 +87,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return Array.isArray(res.data) ? res.data : [];
   }
 
+  async function buscarProductoPorFolioAPI(folio) {
+    const res = await apiFetch(`/api/productos/${encodeURIComponent(folio)}`);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
   async function getProductoDetalleAPI(idProducto) {
     const res = await apiFetch(`/api/productos/${idProducto}`);
+
+    if (Array.isArray(res.data)) {
+      return res.data[0] || null;
+    }
+
     return res.data || null;
   }
 
@@ -121,9 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function cargarCategorias() {
     if (!selectCategoriaProducto) return;
+
     try {
       const lista = await getCategoriasAPI();
       selectCategoriaProducto.innerHTML = '<option value="">Elegir categoría...</option>';
+
       lista.forEach((cat) => {
         const opt = document.createElement("option");
         opt.value = cat.id_cat;
@@ -137,12 +152,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function cargarSubcategorias() {
     if (!selectNuevaSubcategoria) return;
+
     try {
       catalogoSubcats = await getSubcategoriasAPI();
       selectNuevaSubcategoria.innerHTML = '<option value="">Elegir subcategoría...</option>';
+
       catalogoSubcats.forEach((sub) => {
         const id = campo(sub, "id_subcat", "id");
         const nombre = campo(sub, "nombre");
+
         const opt = document.createElement("option");
         opt.value = id;
         opt.textContent = nombre;
@@ -166,6 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderTabla(filtro = "") {
     if (!tbody) return;
+
     const f = norm(filtro).toLowerCase();
 
     const lista = !f
@@ -176,8 +195,14 @@ document.addEventListener("DOMContentLoaded", () => {
           return texto.includes(f);
         });
 
+    renderTablaDesdeLista(lista, !f);
+  }
+
+  function renderTablaDesdeLista(lista = [], esVistaGeneral = false) {
+    if (!tbody) return;
+
     if (lista.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Sin productos registrados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${esVistaGeneral ? "Sin productos registrados." : "No se encontraron productos."}</td></tr>`;
       return;
     }
 
@@ -206,20 +231,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
+  async function buscarProductoServidor() {
+    const termino = norm(inputBuscar ? inputBuscar.value : "");
+
+    if (!termino) {
+      renderTabla("");
+      return;
+    }
+
+    try {
+      const resultados = await buscarProductoPorFolioAPI(termino);
+      renderTablaDesdeLista(resultados, false);
+    } catch (err) {
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al buscar producto: ${err.message}</td></tr>`;
+      }
+    }
+  }
+
   async function abrirDetalle(idProducto) {
     try {
       const producto = await getProductoDetalleAPI(idProducto);
+
       if (!producto) {
         alert("No se pudo obtener el detalle del producto");
         return;
       }
 
-      const detalleCodigo = document.getElementById("detalleCodigo");
-      const detalleDescripcion = document.getElementById("detalleDescripcion");
-      const detalleCosto = document.getElementById("detalleCosto");
-      const detallePrecio = document.getElementById("detallePrecio");
-      const detalleCategorias = document.getElementById("detalleCategorias");
-      const detalleSubcategorias = document.getElementById("detalleSubcategorias");
+      const detalleCodigo         = document.getElementById("detalleCodigo");
+      const detalleDescripcion    = document.getElementById("detalleDescripcion");
+      const detalleCosto          = document.getElementById("detalleCosto");
+      const detallePrecio         = document.getElementById("detallePrecio");
+      const detalleCategorias     = document.getElementById("detalleCategorias");
+      const detalleSubcategorias  = document.getElementById("detalleSubcategorias");
 
       const cats = (producto.categorias || []).map((c) => c.nombre).join(", ");
       const subcats = producto.subcategorias || [];
@@ -229,25 +273,28 @@ document.addEventListener("DOMContentLoaded", () => {
       if (detalleCosto) detalleCosto.textContent = `$${money(producto.costo)}`;
       if (detallePrecio) detallePrecio.textContent = `$${money(producto.precio)}`;
       if (detalleCategorias) detalleCategorias.textContent = cats || "Sin categorías";
+
       if (detalleSubcategorias) {
         detalleSubcategorias.textContent = subcats.length
           ? subcats.map((sub) => {
-          const nombre = campo(sub, "nombre");
-          const valor  = campo(sub, "valor_numerico", "valor");
-          const unidad = campo(sub, "unidad");
-          return `${nombre}: ${valor} ${unidad}`;
-          }).join(", ")
+              const nombre = campo(sub, "nombre");
+              const valor  = campo(sub, "valor_numerico", "valor");
+              const unidad = campo(sub, "unidad");
+              return `${nombre}: ${valor} ${unidad}`;
+            }).join(", ")
           : "Sin subcategorías";
       }
-    $("#modalDetalleProducto").modal("show");
-  } catch (err) {
-    alert(`Error al cargar el detalle: ${err.message}`);
+
+      $("#modalDetalleProducto").modal("show");
+    } catch (err) {
+      alert(`Error al cargar el detalle: ${err.message}`);
+    }
   }
-}
 
   async function abrirEditar(idProducto) {
     try {
       const producto = await getProductoDetalleAPI(idProducto);
+
       if (!producto) {
         alert("No se pudo cargar el producto");
         return;
@@ -279,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
       actualizarEncabezadosVentanas();
 
       if (tituloModal) tituloModal.textContent = `Editar Producto ${producto.folio}`;
-      if (btnGuardar)  btnGuardar.textContent  = "Guardar Cambios";
+      if (btnGuardar) btnGuardar.textContent = "Guardar Cambios";
 
       $(modalRegistro).modal("show");
     } catch (err) {
@@ -297,27 +344,33 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Completa el código y la descripción");
       return;
     }
+
     if (isNaN(costo) || costo < 0) {
       alert("El costo debe ser un número válido");
       return;
     }
+
     if (isNaN(precio) || precio <= 0) {
       alert("El precio debe ser un número mayor a cero");
       return;
     }
+
     if (categoriasTemporales.length === 0) {
       alert("Agrega al menos una categoría");
       return;
     }
 
     const payload = {
-      folio,
       descripcion,
       costo,
       precio,
-      categorias_ids:    categoriasTemporales.map((c) => c.id_cat),
+      categorias_ids: categoriasTemporales.map((c) => c.id_cat),
       subcategorias_ids: subcategoriasTemporales.map((s) => s.id_subcat)
     };
+
+    if (modo === "create") {
+      payload.folio = folio;
+    }
 
     try {
       if (modo === "create") {
@@ -337,6 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function eliminarProducto(idProducto, folio) {
     if (!confirm(`¿Eliminar el producto ${folio}?`)) return;
+
     try {
       await eliminarProductoAPI(idProducto);
       productosCache = await getProductosAPI();
@@ -349,9 +403,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function actualizarEncabezadosVentanas() {
     const codigo      = norm(inpCodigo ? inpCodigo.value : "") || "Nuevo producto";
     const descripcion = norm(inpDescripcion ? inpDescripcion.value : "") || "Sin definir";
-    if (catProductoCodigo)      catProductoCodigo.textContent      = codigo;
+
+    if (catProductoCodigo) catProductoCodigo.textContent = codigo;
     if (catProductoDescripcion) catProductoDescripcion.textContent = descripcion;
-    if (subProductoCodigo)      subProductoCodigo.textContent      = codigo;
+    if (subProductoCodigo) subProductoCodigo.textContent = codigo;
     if (subProductoDescripcion) subProductoDescripcion.textContent = descripcion;
   }
 
@@ -369,33 +424,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderCategoriasTemporales() {
     if (!listaCategoriasProducto) return;
+
     if (categoriasTemporales.length === 0) {
       listaCategoriasProducto.innerHTML = `<div class="text-muted small">No hay categorías agregadas.</div>`;
       actualizarResumenCategorias();
       return;
     }
+
     listaCategoriasProducto.innerHTML = `
       <div>
         ${categoriasTemporales.map((cat, i) => `
           <span class="badge badge-primary mr-1 mb-1 p-2" style="font-size:0.85rem;">
             ${cat.nombre}
-            <button type="button" class="btn-quitar-categoria-producto ml-1"
-              data-index="${i}" title="Quitar"
-              style="background:none;border:none;color:#fff;cursor:pointer;padding:0;line-height:1;">&times;</button>
+            <button
+              type="button"
+              class="btn-quitar-categoria-producto ml-1"
+              data-index="${i}"
+              title="Quitar"
+              style="background:none;border:none;color:#fff;cursor:pointer;padding:0;line-height:1;"
+            >&times;</button>
           </span>
         `).join("")}
       </div>
     `;
+
     actualizarResumenCategorias();
   }
 
   function renderSubcategoriasTemporales() {
     if (!listaSubcategoriasProducto) return;
+
     if (subcategoriasTemporales.length === 0) {
       listaSubcategoriasProducto.innerHTML = `<div class="text-muted small">No hay subcategorías agregadas.</div>`;
       actualizarResumenSubcategorias();
       return;
     }
+
     listaSubcategoriasProducto.innerHTML = `
       <div class="table-responsive">
         <table class="table table-bordered table-sm mb-0">
@@ -414,8 +478,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${sub.valor_numerico}</td>
                 <td>${sub.unidad}</td>
                 <td>
-                  <button type="button" class="btn btn-danger btn-sm btn-quitar-subcategoria"
-                    data-index="${i}">Quitar</button>
+                  <button type="button" class="btn btn-danger btn-sm btn-quitar-subcategoria" data-index="${i}">
+                    Quitar
+                  </button>
                 </td>
               </tr>
             `).join("")}
@@ -423,25 +488,30 @@ document.addEventListener("DOMContentLoaded", () => {
         </table>
       </div>
     `;
+
     actualizarResumenSubcategorias();
   }
 
   function resetFormulario() {
     if (form) form.reset();
+
     categoriasTemporales    = [];
     subcategoriasTemporales = [];
     idEditando              = null;
     modo                    = "create";
-    if (inpCodigo)              inpCodigo.disabled = false;
+
+    if (inpCodigo) inpCodigo.disabled = false;
     if (selectCategoriaProducto) selectCategoriaProducto.value = "";
     if (selectNuevaSubcategoria) selectNuevaSubcategoria.value = "";
     if (selectValorSubcategoria) selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
-    if (inpUnidadSubcategoria)   inpUnidadSubcategoria.value = "";
+    if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = "";
+
     renderCategoriasTemporales();
     renderSubcategoriasTemporales();
     actualizarEncabezadosVentanas();
+
     if (tituloModal) tituloModal.textContent = "Registrar Nuevo Producto";
-    if (btnGuardar)  btnGuardar.textContent  = "Guardar Producto";
+    if (btnGuardar) btnGuardar.textContent = "Guardar Producto";
   }
 
   function cerrarVentanaCategorias() {
@@ -460,17 +530,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (btnCerrarCategorias)  btnCerrarCategorias.addEventListener("click",  cerrarVentanaCategorias);
+  if (btnCerrarCategorias) btnCerrarCategorias.addEventListener("click", cerrarVentanaCategorias);
   if (btnCerrarCategoriasX) btnCerrarCategoriasX.addEventListener("click", cerrarVentanaCategorias);
 
   if (btnAgregarCategoriaProducto) {
     btnAgregarCategoriaProducto.addEventListener("click", () => {
       const idCat = norm(selectCategoriaProducto.value);
+
       if (!idCat) {
         alert("Selecciona una categoría");
         return;
       }
-      const opt    = selectCategoriaProducto.options[selectCategoriaProducto.selectedIndex];
+
+      const opt = selectCategoriaProducto.options[selectCategoriaProducto.selectedIndex];
       const nombre = opt.textContent;
 
       if (categoriasTemporales.some((c) => String(c.id_cat) === idCat)) {
@@ -488,6 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
     listaCategoriasProducto.addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-quitar-categoria-producto");
       if (!btn) return;
+
       const i = Number(btn.getAttribute("data-index"));
       categoriasTemporales.splice(i, 1);
       renderCategoriasTemporales();
@@ -502,14 +575,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (btnCerrarSubcategorias)  btnCerrarSubcategorias.addEventListener("click",  cerrarVentanaSubcategorias);
+  if (btnCerrarSubcategorias) btnCerrarSubcategorias.addEventListener("click", cerrarVentanaSubcategorias);
   if (btnCerrarSubcategoriasX) btnCerrarSubcategoriasX.addEventListener("click", cerrarVentanaSubcategorias);
 
   if (selectNuevaSubcategoria) {
     selectNuevaSubcategoria.addEventListener("change", () => {
       const idSubcat = norm(selectNuevaSubcategoria.value);
+
       if (selectValorSubcategoria) selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
-      if (inpUnidadSubcategoria)   inpUnidadSubcategoria.value = "";
+      if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = "";
 
       if (!idSubcat) return;
 
@@ -525,6 +599,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <option value="${valor}">${valor}</option>
         `;
       }
+
       if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = unidad;
     });
   }
@@ -538,16 +613,19 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Selecciona una subcategoría");
         return;
       }
+
       if (!valorSel) {
         alert("Selecciona un valor");
         return;
       }
 
       const sub = catalogoSubcats.find((s) => String(campo(s, "id_subcat", "id")) === idSubcat);
+
       if (!sub) {
         alert("Subcategoría no encontrada");
         return;
       }
+
       if (subcategoriasTemporales.some((s) => String(s.id_subcat) === idSubcat)) {
         alert("Esa subcategoría ya fue agregada");
         return;
@@ -561,9 +639,10 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       renderSubcategoriasTemporales();
-      if (selectNuevaSubcategoria)  selectNuevaSubcategoria.value  = "";
-      if (selectValorSubcategoria)  selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
-      if (inpUnidadSubcategoria)    inpUnidadSubcategoria.value    = "";
+
+      if (selectNuevaSubcategoria) selectNuevaSubcategoria.value = "";
+      if (selectValorSubcategoria) selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
+      if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = "";
     });
   }
 
@@ -571,6 +650,7 @@ document.addEventListener("DOMContentLoaded", () => {
     listaSubcategoriasProducto.addEventListener("click", (e) => {
       const btn = e.target.closest(".btn-quitar-subcategoria");
       if (!btn) return;
+
       const i = Number(btn.getAttribute("data-index"));
       subcategoriasTemporales.splice(i, 1);
       renderSubcategoriasTemporales();
@@ -603,8 +683,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (e.target.closest(".btn-eliminar")) {
-        const producto = productosCache.find((p) => String(p.id_producto) === idProducto);
-        const folio    = producto ? producto.folio : idProducto;
+        const producto = productosCache.find((p) => String(p.id_producto) === String(idProducto));
+        const folio = producto ? producto.folio : idProducto;
         await eliminarProducto(idProducto, folio);
       }
     });
@@ -613,6 +693,26 @@ document.addEventListener("DOMContentLoaded", () => {
   if (inputBuscar) {
     inputBuscar.addEventListener("input", () => {
       renderTabla(inputBuscar.value);
+    });
+
+    inputBuscar.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        await buscarProductoServidor();
+      }
+    });
+  }
+
+  if (btnBuscarProducto) {
+    btnBuscarProducto.addEventListener("click", async () => {
+      await buscarProductoServidor();
+    });
+  }
+
+  if (btnLimpiarBusqueda) {
+    btnLimpiarBusqueda.addEventListener("click", () => {
+      if (inputBuscar) inputBuscar.value = "";
+      renderTabla("");
     });
   }
 
