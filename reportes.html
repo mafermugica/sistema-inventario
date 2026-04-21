@@ -93,8 +93,12 @@
                                 <input type="date" class="form-control border-left-0 form-control-sm" id="fechaFinal">
                             </div>
 
-                            <button class="btn btn-sm btn-primary shadow-sm mb-2 mb-sm-0" id="btnExportar">
-                                <i class="fas fa-download fa-sm text-white-50 mr-1"></i> Exportar
+                            <button class="btn btn-sm btn-primary shadow-sm mb-2 mb-sm-0 mr-2" id="btnExportarGrafica">
+                                <i class="fas fa-image fa-sm text-white-50 mr-1"></i> Gráfica PNG
+                            </button>
+
+                            <button class="btn btn-sm btn-success shadow-sm mb-2 mb-sm-0" id="btnExportarExcel">
+                                <i class="fas fa-file-excel fa-sm text-white-50 mr-1"></i> Resumen Excel
                             </button>
                             
                         </div>
@@ -169,7 +173,7 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-bordered table-hover table-sm text-center" width="100%" cellspacing="0">
+                                        <table class="table table-bordered table-hover table-sm text-center" id="tablaAlertasStock" width="100%" cellspacing="0">
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Código</th>
@@ -208,7 +212,10 @@
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div class="text-right mt-2">
+                                    <div class="d-flex justify-content-end flex-wrap mt-2">
+                                        <button class="btn btn-sm btn-success mr-2 mb-2 mb-sm-0" id="btnWhatsAppAlertas">
+                                            <i class="fab fa-whatsapp mr-1"></i> Enviar alertas por WhatsApp
+                                        </button>
                                         <a href="productos.html" class="btn btn-sm btn-outline-danger">Ir al Inventario &rarr;</a>
                                     </div>
                                 </div>
