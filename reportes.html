@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
     <title>Reportes - Agromundo</title>
 
     <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -13,32 +14,90 @@
 </head>
 
 <body id="page-top">
+
     <div id="wrapper">
-        
+
+        <!-- SIDEBAR -->
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+
             <a class="sidebar-brand d-flex align-items-center justify-content-center m-0 p-0" href="index.html" style="height: auto; min-height: 80px;">
-    <div class="sidebar-brand-icon d-flex align-items-center justify-content-center m-0 p-0" style="width: 100%; height: 100%; overflow: hidden;">
-        <img src="img/logo_agromundo.png" alt="Logo Agromundo" style="object-fit: contain; width: 100%; height: 100%; max-width: 100%; max-height: 100%;">
-    </div>
-</a>
+                <div class="sidebar-brand-icon d-flex align-items-center justify-content-center m-0 p-0" style="width: 100%; height: 100%; overflow: hidden;">
+                    <img src="img/logo_agromundo.png" alt="Logo Agromundo" style="object-fit: contain; width: 100%; height: 100%; max-width: 100%; max-height: 100%;">
+                </div>
+            </a>
+
             <hr class="sidebar-divider my-0">
-            <li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-fw fa-tachometer-alt"></i> <span>Inicio</span></a></li>
-            <hr class="sidebar-divider">
-            <div class="sidebar-heading">Módulos</div>
-            <li class="nav-item"><a class="nav-link" href="almacenes.html"><i class="fas fa-warehouse"></i> <span>Almacenes</span></a></li>
-            <li class="nav-item"><a class="nav-link" href="productos.html"><i class="fas fa-box"></i> <span>Productos</span></a></li>
-            <li class="nav-item active"><a class="nav-link" href="reportes.html"><i class="fas fa-fw fa-chart-bar"></i> <span>Reportes</span></a></li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="index.html">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Inicio</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="productos.html">
+                    <i class="fas fa-fw fa-box"></i>
+                    <span>Productos</span></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="clientes.html">
+                    <i class="fas fa-fw fa-user-friends"></i>
+                    <span>Clientes</span></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="ventas.html">
+                    <i class="fas fa-fw fa-cart-plus"></i>
+                    <span>Ventas</span></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="inventario.html">
+                    <i class="fas fa-fw fa-list-alt"></i>
+                    <span>Inventario</span></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="movimientos.html">
+                    <i class="fas fa-fw fa-history"></i>
+                    <span>Movimientos</span></a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="almacen.html">
+                    <i class="fas fa-fw fa-warehouse"></i>
+                    <span>Almacén</span></a>
+            </li>
+
+            <li class="nav-item active">
+                <a class="nav-link" href="reportes.html">
+                    <i class="fas fa-fw fa-chart-bar"></i>
+                    <span>Reportes</span></a>
+            </li>
+
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+
         </ul>
+        <!-- FIN SIDEBAR -->
 
         <div id="content-wrapper" class="d-flex flex-column">
+
             <div id="content">
-                
+
+                <!-- TOPBAR -->
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
                         <i class="fa fa-bars"></i>
                     </button>
 
                     <ul class="navbar-nav ml-auto">
+
                         <div class="topbar-divider d-none d-sm-block"></div>
 
                         <li class="nav-item dropdown no-arrow">
@@ -46,38 +105,29 @@
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">Maria Fernanda</span>
                                 <img class="img-profile rounded-circle" src="img/undraw_profile.svg">
                             </a>
+
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="#">
-                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Perfil
-                                </a>
-                                <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Cerrar Sesión
                                 </a>
                             </div>
                         </li>
+
                     </ul>
                 </nav>
+                <!-- FIN TOPBAR -->
 
                 <div class="container-fluid">
-                    
+
+                    <!-- ENCABEZADO -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">Panel de Análisis y Flujo</h1>
-                        
+
+                        <div>
+                            <h1 class="h3 mb-0 text-gray-800">Reportes y Análisis de Ventas</h1>
+                        </div>
+
                         <div class="d-flex align-items-center mt-3 mt-sm-0 flex-wrap">
-                            
-                            <div class="input-group mr-2 shadow-sm mb-2 mb-sm-0" style="width: auto;">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text bg-white border-right-0 small"><i class="fas fa-warehouse text-primary"></i></span>
-                                </div>
-                                <select class="form-control border-left-0 form-control-sm" id="filtroAlmacen">
-                                    <option value="todos">Todos los Almacenes</option>
-                                    <option value="1">Almacén Principal (Veracruz)</option>
-                                    <option value="2">Sucursal Norte</option>
-                                </select>
-                            </div>
 
                             <div class="input-group mr-2 shadow-sm mb-2 mb-sm-0" style="width: auto;">
                                 <div class="input-group-prepend">
@@ -86,146 +136,318 @@
                                 <input type="date" class="form-control border-left-0 form-control-sm" id="fechaInicio">
                             </div>
 
-                            <div class="input-group mr-3 shadow-sm mb-2 mb-sm-0" style="width: auto;">
+                            <div class="input-group mr-2 shadow-sm mb-2 mb-sm-0" style="width: auto;">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text bg-white border-right-0 small">Fin</span>
                                 </div>
                                 <input type="date" class="form-control border-left-0 form-control-sm" id="fechaFinal">
                             </div>
 
-                            <button class="btn btn-sm btn-primary shadow-sm mb-2 mb-sm-0 mr-2" id="btnExportarGrafica">
-                                <i class="fas fa-image fa-sm text-white-50 mr-1"></i> Gráfica PNG
+                            <button class="btn btn-sm btn-primary shadow-sm mb-2 mb-sm-0 mr-2" id="btnFiltrarReportes">
+                                <i class="fas fa-search fa-sm text-white-50 mr-1"></i>
+                                Filtrar
                             </button>
 
                             <button class="btn btn-sm btn-success shadow-sm mb-2 mb-sm-0" id="btnExportarExcel">
-                                <i class="fas fa-file-excel fa-sm text-white-50 mr-1"></i> Resumen Excel
+                                <i class="fas fa-file-excel fa-sm text-white-50 mr-1"></i>
+                                Exportar Excel
                             </button>
-                            
+
                         </div>
                     </div>
 
+                    <!-- TARJETAS RESUMEN -->
+                    <div class="row">
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Total Ventas
+                                            </div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="cardTotalVentas">
+                                                $0.00
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Producto más vendido
+                                            </div>
+                                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="cardProductoMasVendido">
+                                                Sin datos
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-fire fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                Cliente principal
+                                            </div>
+                                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="cardClientePrincipal">
+                                                Sin datos
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                Línea más vendida
+                                            </div>
+                                            <div class="h6 mb-0 font-weight-bold text-gray-800" id="cardLineaMasVendida">
+                                                Sin datos
+                                            </div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-tags fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- TABS REPORTES -->
                     <ul class="nav nav-pills mb-4 shadow-sm p-2 bg-white rounded" id="reportTabs" role="tablist">
+
                         <li class="nav-item">
-                            <a class="nav-link active" id="flujo-tab" data-toggle="tab" href="#tabFlujo" role="tab">
-                                <i class="fas fa-exchange-alt mr-2"></i>Flujo de Inventario
+                            <a class="nav-link active" id="ventas-producto-tab" data-toggle="tab" href="#tabVentasProducto" role="tab">
+                                <i class="fas fa-box mr-2"></i>Ventas por Producto
                             </a>
                         </li>
+
                         <li class="nav-item">
-                            <a class="nav-link" id="utilidad-tab" data-toggle="tab" href="#tabUtilidad" role="tab">
-                                <i class="fas fa-dollar-sign mr-2"></i>Margen de Utilidad
+                            <a class="nav-link" id="ventas-linea-tab" data-toggle="tab" href="#tabVentasLinea" role="tab">
+                                <i class="fas fa-tags mr-2"></i>Ventas por Línea
                             </a>
                         </li>
+
                         <li class="nav-item">
-                            <a class="nav-link" id="vendidos-tab" data-toggle="tab" href="#tabVendidos" role="tab">
-                                <i class="fas fa-fire mr-2"></i>Más Vendidos
+                            <a class="nav-link" id="ventas-cliente-tab" data-toggle="tab" href="#tabVentasCliente" role="tab">
+                                <i class="fas fa-users mr-2"></i>Ventas por Cliente
                             </a>
                         </li>
+
                         <li class="nav-item">
-                            <a class="nav-link" id="periodo-tab" data-toggle="tab" href="#tabPeriodo" role="tab">
-                                <i class="fas fa-calendar-alt mr-2"></i>Ventas por Periodo
+                            <a class="nav-link" id="producto-mas-vendido-tab" data-toggle="tab" href="#tabProductoMasVendido" role="tab">
+                                <i class="fas fa-trophy mr-2"></i>Producto más Vendido
                             </a>
                         </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" id="vendidos-categoria-tab" data-toggle="tab" href="#tabVendidosCategoria" role="tab">
+                                <i class="fas fa-chart-pie mr-2"></i>Más Vendidos por Categoría
+                            </a>
+                        </li>
+
                     </ul>
 
                     <div class="tab-content" id="myTabContent">
-                        
-                        <div class="tab-pane fade show active" id="tabFlujo" role="tabpanel">
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-warning">Entradas vs Salidas (Movimientos)</h6></div>
-                                <div class="card-body">
-                                    <div style="position: relative; height:350px;"><canvas id="chartFlujo"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="tab-pane fade" id="tabUtilidad" role="tabpanel">
+                        <!-- VENTAS POR PRODUCTO -->
+                        <div class="tab-pane fade show active" id="tabVentasProducto" role="tabpanel">
                             <div class="card shadow mb-4">
-                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Utilidad Bruta por Categoría</h6></div>
-                                <div class="card-body">
-                                    <div style="position: relative; height:350px;"><canvas id="chartUtilidad"></canvas></div>
+                                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-box mr-2"></i>Gráfica de Ventas por Producto
+                                    </h6>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="tab-pane fade" id="tabVendidos" role="tabpanel">
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-success">Productos más Vendidos por Categoría</h6></div>
                                 <div class="card-body">
-                                    <div style="position: relative; height:350px;"><canvas id="chartVendidos"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="tab-pane fade" id="tabPeriodo" role="tabpanel">
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-info">Histórico de Ventas por Periodo</h6></div>
-                                <div class="card-body">
-                                    <div style="position: relative; height:350px;"><canvas id="chartPeriodo"></canvas></div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div> <div class="row mt-2 mb-4">
-                        <div class="col-12">
-                            <div class="card shadow border-bottom-danger">
-                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold text-danger"><i class="fas fa-exclamation-triangle mr-2"></i>Alertas: Productos con Stock Crítico</h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover table-sm text-center" id="tablaAlertasStock" width="100%" cellspacing="0">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th>Código</th>
-                                                    <th>Producto</th>
-                                                    <th>Categoría</th>
-                                                    <th>Stock Actual</th>
-                                                    <th>Mínimo Permitido</th>
-                                                    <th>Estado</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>PAN-001</td>
-                                                    <td>Panel Solar 100W</td>
-                                                    <td>Solar</td>
-                                                    <td class="text-danger font-weight-bold">2</td>
-                                                    <td>10</td>
-                                                    <td><span class="badge badge-danger">Comprar Urgente</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>BOM-012</td>
-                                                    <td>Bomba Sumergible 1HP</td>
-                                                    <td>Riego</td>
-                                                    <td class="text-warning font-weight-bold">4</td>
-                                                    <td>5</td>
-                                                    <td><span class="badge badge-warning">Stock Bajo</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>INV-204</td>
-                                                    <td>Inversor 24V a 110V</td>
-                                                    <td>Residencial</td>
-                                                    <td class="text-danger font-weight-bold">0</td>
-                                                    <td>3</td>
-                                                    <td><span class="badge badge-danger">Agotado</span></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="d-flex justify-content-end flex-wrap mt-2">
-                                        <button class="btn btn-sm btn-success mr-2 mb-2 mb-sm-0" id="btnWhatsAppAlertas">
-                                            <i class="fab fa-whatsapp mr-1"></i> Enviar alertas por WhatsApp
-                                        </button>
-                                        <a href="productos.html" class="btn btn-sm btn-outline-danger">Ir al Inventario &rarr;</a>
+                                    <div style="position: relative; height:350px;">
+                                        <canvas id="chartVentasProducto"></canvas>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- VENTAS POR LÍNEA / CATEGORÍA -->
+                        <div class="tab-pane fade" id="tabVentasLinea" role="tabpanel">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold text-warning">
+                                        <i class="fas fa-tags mr-2"></i>Gráfica de Ventas por Línea o Categoría
+                                    </h6>
+                                </div>
+
+                                <div class="card-body">
+                                    <div style="position: relative; height:350px;">
+                                        <canvas id="chartVentasLinea"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VENTAS POR CLIENTE -->
+                        <div class="tab-pane fade" id="tabVentasCliente" role="tabpanel">
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold text-info">
+                                        <i class="fas fa-users mr-2"></i>Gráfica de Ventas por Cliente
+                                    </h6>
+                                </div>
+
+                                <div class="card-body">
+                                    <div style="position: relative; height:350px;">
+                                        <canvas id="chartVentasCliente"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PRODUCTO MÁS VENDIDO -->
+                        <div class="tab-pane fade" id="tabProductoMasVendido" role="tabpanel">
+                            <div class="row">
+
+                                <div class="col-lg-5 mb-4">
+                                    <div class="card shadow h-100">
+                                        <div class="card-header py-3">
+                                            <h6 class="m-0 font-weight-bold text-success">
+                                                <i class="fas fa-trophy mr-2"></i>Producto más Vendido
+                                            </h6>
+                                        </div>
+
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-medal fa-4x text-warning mb-3"></i>
+
+                                            <h4 class="font-weight-bold text-gray-800" id="txtProductoMasVendido">
+                                                Sin datos
+                                            </h4>
+
+                                            <p class="text-muted mb-1">Cantidad vendida:</p>
+                                            <h5 class="font-weight-bold text-success" id="txtCantidadProductoMasVendido">
+                                                0 unidades
+                                            </h5>
+
+                                            <p class="text-muted mb-1 mt-3">Importe generado:</p>
+                                            <h5 class="font-weight-bold text-primary" id="txtImporteProductoMasVendido">
+                                                $0.00
+                                            </h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-7 mb-4">
+                                    <div class="card shadow h-100">
+                                        <div class="card-header py-3">
+                                            <h6 class="m-0 font-weight-bold text-success">
+                                                Ranking de Productos Vendidos
+                                            </h6>
+                                        </div>
+
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-hover table-sm text-center" id="tablaRankingProductos" width="100%" cellspacing="0">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>#</th>
+                                                            <th>Producto</th>
+                                                            <th>Categoría</th>
+                                                            <th>Cantidad Vendida</th>
+                                                            <th>Total Vendido</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td colspan="5">Sin datos disponibles</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- MÁS VENDIDOS POR CATEGORÍA -->
+                        <div class="tab-pane fade" id="tabVendidosCategoria" role="tabpanel">
+                            <div class="card shadow mb-4">
+
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-danger">
+                                        <i class="fas fa-chart-pie mr-2"></i>Productos más Vendidos por Categoría
+                                    </h6>
+                                </div>
+
+                                <div class="card-body">
+
+                                    <div class="row">
+
+                                        <div class="col-lg-6 mb-4">
+                                            <div style="position: relative; height:350px;">
+                                                <canvas id="chartVendidosCategoria"></canvas>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-6 mb-4">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-hover table-sm text-center" id="tablaVendidosCategoria" width="100%" cellspacing="0">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th>Categoría</th>
+                                                            <th>Producto más vendido</th>
+                                                            <th>Cantidad Vendida</th>
+                                                            <th>Total Vendido</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td colspan="4">Sin datos disponibles</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
                     </div>
 
                 </div>
             </div>
-            
+
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
@@ -233,33 +455,49 @@
                     </div>
                 </div>
             </footer>
+
         </div>
+
     </div>
 
     <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+
         <div class="modal-dialog" role="document">
+
             <div class="modal-content">
+
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel">¿Listo para salir?</h5>
                     <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">Selecciona "Cerrar Sesión" abajo si estás listo para terminar tu sesión actual.</div>
+
+                <div class="modal-body">
+                    Selecciona "Cerrar Sesión" abajo si estás listo para terminar tu sesión actual.
+                </div>
+
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
                     <a class="btn btn-primary" href="login.html">Cerrar Sesión</a>
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
     <script src="js/sb-admin-2.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <script src="reportes.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <script src="js/reportes.js"></script>
 </body>
+
 </html>

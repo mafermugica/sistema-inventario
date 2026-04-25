@@ -49,6 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let subcategoriasTemporales = [];
   let catalogoSubcats         = [];
   let productosCache          = [];
+  let timeoutBusqueda         = null;
+  let ultimoTerminoBuscado    = "";
 
   const norm  = (v) => (v ?? "").toString().trim();
   const money = (v) => Number(v || 0).toFixed(2);
@@ -58,6 +60,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (obj?.[k] !== undefined && obj?.[k] !== null) return obj[k];
     }
     return "";
+  }
+
+  function escapeHtml(valor) {
+    return String(valor ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   async function apiFetch(endpoint, options = {}) {
@@ -96,7 +107,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const res = await apiFetch(`/api/productos/${idProducto}`);
 
     if (Array.isArray(res.data)) {
-      return res.data[0] || null;
+      const encontrado = res.data.find((p) => String(p.id_producto) === String(idProducto));
+      return encontrado || res.data[0] || null;
     }
 
     return res.data || null;
@@ -174,47 +186,32 @@ document.addEventListener("DOMContentLoaded", () => {
   async function cargarProductos() {
     try {
       productosCache = await getProductosAPI();
-      renderTabla(inputBuscar ? inputBuscar.value : "");
+      renderTablaDesdeLista(productosCache, true);
     } catch (err) {
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar productos: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar productos: ${escapeHtml(err.message)}</td></tr>`;
       }
     }
-  }
-
-  function renderTabla(filtro = "") {
-    if (!tbody) return;
-
-    const f = norm(filtro).toLowerCase();
-
-    const lista = !f
-      ? productosCache
-      : productosCache.filter((p) => {
-          const cats = (p.categorias || []).map((c) => c.nombre).join(" ");
-          const texto = `${p.folio} ${p.descripcion || ""} ${p.costo} ${p.precio} ${cats}`.toLowerCase();
-          return texto.includes(f);
-        });
-
-    renderTablaDesdeLista(lista, !f);
   }
 
   function renderTablaDesdeLista(lista = [], esVistaGeneral = false) {
     if (!tbody) return;
 
-    if (lista.length === 0) {
+    if (!lista.length) {
       tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${esVistaGeneral ? "Sin productos registrados." : "No se encontraron productos."}</td></tr>`;
       return;
     }
 
     tbody.innerHTML = lista.map((p) => {
       const cats = (p.categorias || []).map((c) => c.nombre).join(", ") || "—";
+
       return `
-        <tr data-id="${p.id_producto}">
-          <td>${norm(p.folio)}</td>
-          <td>${norm(p.descripcion) || "—"}</td>
-          <td>$${money(p.costo)}</td>
-          <td>$${money(p.precio)}</td>
-          <td>${cats}</td>
+        <tr data-id="${escapeHtml(p.id_producto)}">
+          <td>${escapeHtml(norm(p.folio))}</td>
+          <td>${escapeHtml(norm(p.descripcion) || "—")}</td>
+          <td>$${escapeHtml(money(p.costo))}</td>
+          <td>$${escapeHtml(money(p.precio))}</td>
+          <td>${escapeHtml(cats)}</td>
           <td>
             <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle">
               <i class="fas fa-eye"></i>
@@ -231,20 +228,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }).join("");
   }
 
-  async function buscarProductoServidor() {
-    const termino = norm(inputBuscar ? inputBuscar.value : "");
+  async function buscarProductoServidor(terminoManual = null) {
+    const termino = norm(terminoManual ?? (inputBuscar ? inputBuscar.value : ""));
+    ultimoTerminoBuscado = termino;
 
     if (!termino) {
-      renderTabla("");
+      renderTablaDesdeLista(productosCache, true);
       return;
     }
 
     try {
       const resultados = await buscarProductoPorFolioAPI(termino);
+
+      if (ultimoTerminoBuscado !== termino) return;
+
       renderTablaDesdeLista(resultados, false);
     } catch (err) {
+      if (ultimoTerminoBuscado !== termino) return;
+
       if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al buscar producto: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al buscar producto: ${escapeHtml(err.message)}</td></tr>`;
       }
     }
   }
@@ -258,12 +261,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const detalleCodigo         = document.getElementById("detalleCodigo");
-      const detalleDescripcion    = document.getElementById("detalleDescripcion");
-      const detalleCosto          = document.getElementById("detalleCosto");
-      const detallePrecio         = document.getElementById("detallePrecio");
-      const detalleCategorias     = document.getElementById("detalleCategorias");
-      const detalleSubcategorias  = document.getElementById("detalleSubcategorias");
+      const detalleCodigo        = document.getElementById("detalleCodigo");
+      const detalleDescripcion   = document.getElementById("detalleDescripcion");
+      const detalleCosto         = document.getElementById("detalleCosto");
+      const detallePrecio        = document.getElementById("detallePrecio");
+      const detalleCategorias    = document.getElementById("detalleCategorias");
+      const detalleSubcategorias = document.getElementById("detalleSubcategorias");
 
       const cats = (producto.categorias || []).map((c) => c.nombre).join(", ");
       const subcats = producto.subcategorias || [];
@@ -379,8 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await editarProductoAPI(idEditando, payload);
       }
 
-      productosCache = await getProductosAPI();
-      renderTabla(inputBuscar ? inputBuscar.value : "");
+      await cargarProductos();
       resetFormulario();
       $(modalRegistro).modal("hide");
     } catch (err) {
@@ -393,8 +395,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await eliminarProductoAPI(idProducto);
-      productosCache = await getProductosAPI();
-      renderTabla(inputBuscar ? inputBuscar.value : "");
+      await cargarProductos();
+
+      if (inputBuscar) {
+        const termino = norm(inputBuscar.value);
+        if (termino) {
+          await buscarProductoServidor(termino);
+        }
+      }
     } catch (err) {
       alert(`Error al eliminar: ${err.message}`);
     }
@@ -435,7 +443,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div>
         ${categoriasTemporales.map((cat, i) => `
           <span class="badge badge-primary mr-1 mb-1 p-2" style="font-size:0.85rem;">
-            ${cat.nombre}
+            ${escapeHtml(cat.nombre)}
             <button
               type="button"
               class="btn-quitar-categoria-producto ml-1"
@@ -474,9 +482,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <tbody>
             ${subcategoriasTemporales.map((sub, i) => `
               <tr>
-                <td>${sub.nombre}</td>
-                <td>${sub.valor_numerico}</td>
-                <td>${sub.unidad}</td>
+                <td>${escapeHtml(sub.nombre)}</td>
+                <td>${escapeHtml(sub.valor_numerico)}</td>
+                <td>${escapeHtml(sub.unidad)}</td>
                 <td>
                   <button type="button" class="btn btn-danger btn-sm btn-quitar-subcategoria" data-index="${i}">
                     Quitar
@@ -596,7 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (selectValorSubcategoria) {
         selectValorSubcategoria.innerHTML = `
           <option value="">Elegir valor...</option>
-          <option value="${valor}">${valor}</option>
+          <option value="${escapeHtml(valor)}">${escapeHtml(valor)}</option>
         `;
       }
 
@@ -692,12 +700,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (inputBuscar) {
     inputBuscar.addEventListener("input", () => {
-      renderTabla(inputBuscar.value);
+      clearTimeout(timeoutBusqueda);
+
+      const termino = norm(inputBuscar.value);
+
+      if (!termino) {
+        ultimoTerminoBuscado = "";
+        renderTablaDesdeLista(productosCache, true);
+        return;
+      }
+
+      timeoutBusqueda = setTimeout(async () => {
+        await buscarProductoServidor(termino);
+      }, 400);
     });
 
     inputBuscar.addEventListener("keydown", async (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
+        clearTimeout(timeoutBusqueda);
         await buscarProductoServidor();
       }
     });
@@ -705,14 +726,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnBuscarProducto) {
     btnBuscarProducto.addEventListener("click", async () => {
+      clearTimeout(timeoutBusqueda);
       await buscarProductoServidor();
     });
   }
 
   if (btnLimpiarBusqueda) {
     btnLimpiarBusqueda.addEventListener("click", () => {
+      clearTimeout(timeoutBusqueda);
+      ultimoTerminoBuscado = "";
       if (inputBuscar) inputBuscar.value = "";
-      renderTabla("");
+      renderTablaDesdeLista(productosCache, true);
     });
   }
 
