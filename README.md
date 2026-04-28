@@ -19,14 +19,6 @@ Digitalizar los procesos de inventario y ventas de Agromundo, eliminando tareas 
 * **Análisis Visual:** Gráficas de ventas por producto, categoría y clientes más frecuentes.
 * **Auditoría:** Historial completo de movimientos de entrada y salida por almacén.
 
-🚀 Instalación y Uso
-Para ejecutar este proyecto localmente, sigue estos pasos:
-
-Clonar el repositorio:
-
-Bash
-git clone [https://github.com/mafermugica/sistema-inventario.git](https://github.com/mafermugica/sistema-inventario.git)
-Acceder al directorio:
 
 Bash
 cd sistema-inventario
