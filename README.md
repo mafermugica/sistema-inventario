@@ -12,12 +12,9 @@ Digitalizar los procesos de inventario y ventas de Agromundo, eliminando tareas 
 * **Exportación de Datos:** **SheetJS (XLSX)** para la generación de reportes en Excel.
 * **Comunicación:** Consumo de **API REST** para integración con el backend y persistencia en base de datos relacional.
 
-## 📂 Estructura del Proyecto
-El proyecto sigue una organización de archivos limpia y desacoplada, facilitando el mantenimiento por módulos:
-
 ## ✨ Funcionalidades Principales
-Gestión de Catálogo: Registro detallado de productos con categorías y subcategorías.
-Control de Stock: Validación automática de existencias antes de confirmar ventas.
-Automatización: Descuento automático del inventario tras cada venta registrada.
-Análisis Visual: Gráficas de ventas por producto, categoría y clientes más frecuentes.
-Auditoría: Historial completo de movimientos de entrada y salida por almacén.
+* **Gestión de Catálogo:** Registro detallado de productos con categorías y subcategorías.
+* **Control de Stock:** Validación automática de existencias antes de confirmar ventas.
+* **Automatización:** Descuento automático del inventario tras cada venta registrada.
+* **Análisis Visual:** Gráficas de ventas por producto, categoría y clientes más frecuentes.
+* **Auditoría:** Historial completo de movimientos de entrada y salida por almacén.
