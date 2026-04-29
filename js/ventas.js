@@ -33,62 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let productosCache = [];
   let almacenesCache = [];
   let inventariosCache = [];
-
-  const ESTADOS = [
-    { id: 1, nombre: "AGUASCALIENTES" },
-    { id: 2, nombre: "BAJA CALIFORNIA" },
-    { id: 3, nombre: "BAJA CALIFORNIA SUR" },
-    { id: 4, nombre: "CAMPECHE" },
-    { id: 5, nombre: "CHIAPAS" }
-  ];
-
-  const MUNICIPIOS = {
-    1: [
-      { id: 1, nombre: "AGUASCALIENTES" },
-      { id: 2, nombre: "AGUASCALIENTES" },
-      { id: 3, nombre: "ASIENTOS" },
-      { id: 4, nombre: "CALVILLO" },
-      { id: 5, nombre: "COSÍO" },
-      { id: 6, nombre: "JESÚS MARÍA" },
-      { id: 7, nombre: "PABELLÓN DE ARTEAGA" },
-      { id: 8, nombre: "RINCÓN DE ROMOS" },
-      { id: 9, nombre: "SAN JOSÉ DE GRACIA" },
-      { id: 10, nombre: "TEPEZALÁ" },
-      { id: 11, nombre: "EL LLANO" },
-      { id: 12, nombre: "SAN FRANCISCO DE LOS ROMO" }
-    ],
-    2: [
-      { id: 13, nombre: "ENSENADA" },
-      { id: 14, nombre: "MEXICALI" },
-      { id: 15, nombre: "TECATE" },
-      { id: 16, nombre: "TIJUANA" },
-      { id: 17, nombre: "PLAYAS DE ROSARITO" }
-    ],
-    3: [
-      { id: 18, nombre: "COMONDÚ" },
-      { id: 19, nombre: "MULEGÉ" },
-      { id: 20, nombre: "LA PAZ" },
-      { id: 21, nombre: "LOS CABOS" },
-      { id: 22, nombre: "LORETO" }
-    ],
-    4: [
-      { id: 23, nombre: "CALKINÍ" },
-      { id: 24, nombre: "CAMPECHE" },
-      { id: 25, nombre: "CARMEN" },
-      { id: 26, nombre: "CHAMPOTÓN" },
-      { id: 27, nombre: "HECELCHAKÁN" },
-      { id: 28, nombre: "HOPELCHÉN" },
-      { id: 29, nombre: "PALIZADA" },
-      { id: 30, nombre: "TENABO" },
-      { id: 31, nombre: "ESCÁRCEGA" },
-      { id: 32, nombre: "CALAKMUL" },
-      { id: 33, nombre: "CANDELARIA" }
-    ],
-    5: [
-      { id: 34, nombre: "ACACOYAGUA" },
-      { id: 35, nombre: "ACALA" }
-    ]
-  };
+  let estadosCache = [];
+  let municipiosCache = [];
 
   const norm = (v) => (v ?? "").toString().trim();
 
@@ -98,6 +44,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function calcularPrecioConIVA(precio) {
     return Number(precio || 0) * (1 + IVA);
+  }
+
+  function showSuccess(texto) {
+    return Swal.fire({
+      icon: "success",
+      title: "Éxito",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showError(texto) {
+    return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showWarning(texto) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Atención",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  async function confirmDelete(texto) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Estás seguro?",
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true
+    });
+
+    return result.isConfirmed;
   }
 
   async function apiFetch(endpoint, options = {}) {
@@ -172,13 +159,26 @@ document.addEventListener("DOMContentLoaded", () => {
     return res.data || null;
   }
 
+  async function getEstadosAPI() {
+    const res = await apiFetch("/api/estados_municipios/");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function getMunicipiosPorEstadoAPI(idEstado) {
+    if (!idEstado) return [];
+    const res = await apiFetch(`/api/estados_municipios/${idEstado}`);
+    return Array.isArray(res.data) ? res.data : [];
+  }
+
   function normalizarVenta(v) {
     return {
       id_venta: Number(v.id_venta),
       folio: v.folio || "",
       precio_venta_final: Number(v.precio_venta_final || 0),
-      estado: v.estado ?? null,
-      municipio: v.municipio ?? null
+      id_estado: v.id_estado ? Number(v.id_estado) : null,
+      id_municipio: v.id_municipio ? Number(v.id_municipio) : null,
+      estado: v.estado ?? v.nombre_estado ?? null,
+      municipio: v.municipio ?? v.nombre_municipio ?? null
     };
   }
 
@@ -199,50 +199,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function obtenerCodigoEstadoPorNombre(nombreEstado) {
     if (!nombreEstado) return "";
-    const encontrado = ESTADOS.find(
+    const encontrado = estadosCache.find(
       (e) => norm(e.nombre).toLowerCase() === norm(nombreEstado).toLowerCase()
     );
-    return encontrado ? encontrado.id : "";
+    return encontrado ? Number(encontrado.id_estado) : "";
   }
 
-  function obtenerCodigoMunicipioPorNombre(codigoEstado, nombreMunicipio) {
-    if (!codigoEstado || !nombreMunicipio || !MUNICIPIOS[codigoEstado]) return "";
-    const encontrado = MUNICIPIOS[codigoEstado].find(
+  function obtenerCodigoMunicipioPorNombre(nombreMunicipio) {
+    if (!nombreMunicipio) return "";
+    const encontrado = municipiosCache.find(
       (m) => norm(m.nombre).toLowerCase() === norm(nombreMunicipio).toLowerCase()
     );
-    return encontrado ? encontrado.id : "";
+    return encontrado ? Number(encontrado.id_municipio) : "";
   }
 
-  function cargarEstados() {
+  async function cargarEstados(estadoSeleccionado = "") {
     if (!selectEstado) return;
 
-    selectEstado.innerHTML = `
-      <option value="">Elegir estado...</option>
-    `;
+    estadosCache = await getEstadosAPI();
 
-    ESTADOS.forEach((estado) => {
-      selectEstado.innerHTML += `
-        <option value="${estado.id}">${estado.nombre}</option>
-      `;
+    selectEstado.innerHTML = `<option value="">Elegir estado...</option>`;
+
+    estadosCache.forEach((estado) => {
+      const option = document.createElement("option");
+      option.value = estado.id_estado;
+      option.textContent = estado.nombre;
+
+      if (String(estado.id_estado) === String(estadoSeleccionado)) {
+        option.selected = true;
+      }
+
+      selectEstado.appendChild(option);
     });
   }
 
-  function cargarMunicipios(idEstado, municipioSeleccionado = "") {
+  async function cargarMunicipios(idEstado, municipioSeleccionado = "") {
     if (!selectMunicipio) return;
 
-    selectMunicipio.innerHTML = `
-      <option value="">Elegir municipio...</option>
-    `;
+    selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
+    selectMunicipio.disabled = true;
+    municipiosCache = [];
 
-    if (!idEstado || !MUNICIPIOS[idEstado]) return;
+    if (!idEstado) return;
 
-    MUNICIPIOS[idEstado].forEach((municipio) => {
-      selectMunicipio.innerHTML += `
-        <option value="${municipio.id}" ${String(municipio.id) === String(municipioSeleccionado) ? "selected" : ""}>
-          ${municipio.nombre}
-        </option>
-      `;
+    municipiosCache = await getMunicipiosPorEstadoAPI(idEstado);
+
+    municipiosCache.forEach((municipio) => {
+      const option = document.createElement("option");
+      option.value = municipio.id_municipio;
+      option.textContent = municipio.nombre;
+
+      if (String(municipio.id_municipio) === String(municipioSeleccionado)) {
+        option.selected = true;
+      }
+
+      selectMunicipio.appendChild(option);
     });
+
+    selectMunicipio.disabled = false;
   }
 
   function cargarProductos() {
@@ -479,6 +493,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectEstado) selectEstado.value = "";
     if (selectMunicipio) {
       selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
+      selectMunicipio.disabled = true;
     }
 
     if (selectProductoVenta) {
@@ -712,7 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const ventaDetalle = await getVentaAPI(venta.id_venta);
 
       if (!ventaDetalle) {
-        alert("No se pudo obtener el detalle de la venta");
+        await showWarning("No se pudo obtener el detalle de la venta");
         return;
       }
 
@@ -771,7 +786,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalDetalleVenta").modal("show");
     } catch (error) {
-      alert(error.message);
+      await showError(error.message || "Error al cargar el detalle");
     }
   }
 
@@ -780,7 +795,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const ventaDetalle = await getVentaAPI(venta.id_venta);
 
       if (!ventaDetalle) {
-        alert("No se pudo obtener el detalle de la venta");
+        await showWarning("No se pudo obtener el detalle de la venta");
         return;
       }
 
@@ -794,15 +809,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
       inpFolio.value = ventaNormalizada.folio || "";
 
-      const codigoEstado = obtenerCodigoEstadoPorNombre(ventaNormalizada.estado);
-      const codigoMunicipio = obtenerCodigoMunicipioPorNombre(
-        codigoEstado,
-        ventaNormalizada.municipio
-      );
+      let codigoEstado = ventaNormalizada.id_estado || "";
+      let codigoMunicipio = ventaNormalizada.id_municipio || "";
 
-      selectEstado.value = codigoEstado || "";
-      cargarMunicipios(codigoEstado || "", codigoMunicipio || "");
-      selectMunicipio.value = codigoMunicipio || "";
+      await cargarEstados(codigoEstado || "");
+
+      if (!codigoEstado && ventaNormalizada.estado) {
+        codigoEstado = obtenerCodigoEstadoPorNombre(ventaNormalizada.estado);
+        if (codigoEstado) {
+          selectEstado.value = codigoEstado;
+        }
+      }
+
+      if (codigoEstado) {
+        await cargarMunicipios(codigoEstado);
+
+        if (!codigoMunicipio && ventaNormalizada.municipio) {
+          codigoMunicipio = obtenerCodigoMunicipioPorNombre(ventaNormalizada.municipio);
+        }
+
+        if (codigoMunicipio) {
+          selectMunicipio.value = codigoMunicipio;
+        }
+      } else {
+        await cargarMunicipios("");
+      }
 
       detalleVentaTemporal = detalles.map((d) => ({
         id_producto: Number(d.id_producto),
@@ -818,18 +849,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalNuevaVenta").modal("show");
     } catch (error) {
-      alert(error.message);
+      await showError(error.message || "Error al cargar la venta");
     }
   }
 
   if (selectEstado) {
-    selectEstado.addEventListener("change", () => {
-      if (!selectEstado.value) {
-        selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
-        return;
-      }
-
-      cargarMunicipios(selectEstado.value);
+    selectEstado.addEventListener("change", async () => {
+      const idEstado = selectEstado.value;
+      await cargarMunicipios(idEstado || "");
     });
   }
 
@@ -845,7 +872,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (btnAgregarDetalle) {
-    btnAgregarDetalle.addEventListener("click", (e) => {
+    btnAgregarDetalle.addEventListener("click", async (e) => {
       e.preventDefault();
 
       const idProducto = Number(selectProductoVenta.value);
@@ -856,17 +883,17 @@ document.addEventListener("DOMContentLoaded", () => {
         selectProductoVenta.options[selectProductoVenta.selectedIndex]?.text || "";
 
       if (!idProducto) {
-        alert("Selecciona un producto");
+        await showWarning("Selecciona un producto");
         return;
       }
 
       if (isNaN(cantidad) || cantidad <= 0) {
-        alert("Ingresa una cantidad válida");
+        await showWarning("Ingresa una cantidad válida");
         return;
       }
 
       if (isNaN(precio) || precio < 0) {
-        alert("Ingresa un precio válido");
+        await showWarning("Ingresa un precio válido");
         return;
       }
 
@@ -908,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDetalleTemporal();
     });
 
-    tbodyDetalleVenta.addEventListener("change", (e) => {
+    tbodyDetalleVenta.addEventListener("change", async (e) => {
       const tr = e.target.closest("tr");
       if (!tr) return;
 
@@ -929,7 +956,7 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
         if (existeRepetido) {
-          alert("Ese producto ya está agregado en la venta.");
+          await showWarning("Ese producto ya está agregado en la venta.");
           select.value = item.id_producto;
           return;
         }
@@ -964,15 +991,15 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await refrescarCatalogos();
       cargarProductos();
-      cargarEstados();
 
       if (modo !== "edit") {
+        await cargarEstados();
         resetFormulario();
         tituloModal.textContent = "Registrar Venta";
         btnGuardar.textContent = "Guardar Venta";
       }
     } catch (error) {
-      alert(error.message);
+      await showError(error.message || "Error al cargar datos del formulario");
     }
   });
 
@@ -989,12 +1016,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const folio = norm(inpFolio.value);
 
       if (!folio) {
-        alert("Completa el folio");
+        await showWarning("Completa el folio");
         return;
       }
 
       if (!detalleVentaTemporal.length) {
-        alert("Agrega al menos un producto a la venta");
+        await showWarning("Agrega al menos un producto a la venta");
         return;
       }
 
@@ -1007,6 +1034,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await refrescarVentas();
 
         const payload = buildVentaPayload();
+        let res;
 
         if (modo === "create") {
           if (
@@ -1017,8 +1045,8 @@ document.addEventListener("DOMContentLoaded", () => {
             throw new Error("Ese folio ya existe");
           }
 
-          await crearVentaAPI(payload);
-          alert("Venta registrada correctamente");
+          res = await crearVentaAPI(payload);
+          await showSuccess(res?.message || "Venta registrada correctamente");
         } else {
           if (
             ventasCache.some(
@@ -1030,8 +1058,8 @@ document.addEventListener("DOMContentLoaded", () => {
             throw new Error("Ese folio ya existe");
           }
 
-          await actualizarVentaAPI(idVentaEditando, payload);
-          alert("Venta actualizada correctamente");
+          res = await actualizarVentaAPI(idVentaEditando, payload);
+          await showSuccess(res?.message || "Venta actualizada correctamente");
         }
 
         await Promise.all([refrescarCatalogos(), refrescarVentas()]);
@@ -1040,7 +1068,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $(modalRegistro).modal("hide");
       } catch (error) {
         console.error(error);
-        alert(error.message || "Error al guardar la venta");
+        await showError(error.message || "Error al guardar la venta");
       } finally {
         btnGuardar.disabled = false;
         btnGuardar.textContent = textoOriginalBoton;
@@ -1069,16 +1097,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (e.target.closest(".btn-eliminar")) {
-        if (!confirm(`¿Eliminar la venta ${venta.folio}?`)) return;
+        const confirmado = await confirmDelete(`Se eliminará la venta ${venta.folio}.`);
+        if (!confirmado) return;
 
         try {
-          await eliminarVentaAPI(idVenta);
+          const res = await eliminarVentaAPI(idVenta);
           await Promise.all([refrescarCatalogos(), refrescarVentas()]);
           renderTabla(inputBuscar ? inputBuscar.value : "");
-          alert("Venta eliminada correctamente");
+          await showSuccess(res?.message || "Venta eliminada correctamente");
         } catch (error) {
           console.error(error);
-          alert(error.message || "Error al eliminar la venta");
+          await showError(error.message || "Error al eliminar la venta");
         }
       }
     });
@@ -1094,11 +1123,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await Promise.all([refrescarCatalogos(), refrescarVentas()]);
       cargarProductos();
-      cargarEstados();
+      await cargarEstados();
       renderTabla();
       resetFormulario();
     } catch (error) {
-      alert(`Error al cargar datos iniciales: ${error.message}`);
+      await showError(`Error al cargar datos iniciales: ${error.message}`);
     }
   })();
 });
