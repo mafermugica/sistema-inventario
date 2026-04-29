@@ -1,802 +1,772 @@
+const API_URL = "http://143.198.230.63";
+
+let productos = [];
+let categoriasDisponibles = [];
+let subcategoriasDisponibles = [];
+
+let categoriasTemporales = [];
+let subcategoriasTemporales = [];
+
+let modo = "create";
+let idProductoEditando = null;
+
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://143.198.230.63";
+    cargarProductos();
+    cargarCategorias();
+    cargarSubcategorias();
 
-  const btnGuardar                  = document.getElementById("btnGuardarProducto");
-  const btnAbrirCategoriasProducto  = document.getElementById("btnAbrirCategoriasProducto");
-  const btnAgregarCategoriaProducto = document.getElementById("btnAgregarCategoriaProducto");
-  const btnCerrarCategorias         = document.getElementById("btnCerrarCategorias");
-  const btnCerrarCategoriasX        = document.getElementById("btnCerrarCategoriasX");
-  const btnAbrirSubcategorias       = document.getElementById("btnAbrirSubcategorias");
-  const btnAgregarSubcategoria      = document.getElementById("btnAgregarSubcategoria");
-  const btnCerrarSubcategorias      = document.getElementById("btnCerrarSubcategorias");
-  const btnCerrarSubcategoriasX     = document.getElementById("btnCerrarSubcategoriasX");
+    const btnGuardarProducto = document.getElementById("btnGuardarProducto");
+    const buscarProductos = document.getElementById("buscarProductos");
+    const btnAbrirCategoriasProducto = document.getElementById("btnAbrirCategoriasProducto");
+    const btnCerrarCategorias = document.getElementById("btnCerrarCategorias");
+    const btnCerrarCategoriasX = document.getElementById("btnCerrarCategoriasX");
+    const btnAgregarCategoriaProducto = document.getElementById("btnAgregarCategoriaProducto");
 
-  const form        = document.getElementById("formularioProducto");
-  const tbody       = document.querySelector("#dataTable tbody");
-  const inputBuscar = document.getElementById("buscarProductos");
-  const tituloModal = document.getElementById("tituloModal");
+    const btnAbrirSubcategorias = document.getElementById("btnAbrirSubcategorias");
+    const btnCerrarSubcategorias = document.getElementById("btnCerrarSubcategorias");
+    const btnCerrarSubcategoriasX = document.getElementById("btnCerrarSubcategoriasX");
+    const btnAgregarSubcategoria = document.getElementById("btnAgregarSubcategoria");
+    const selectNuevaSubcategoria = document.getElementById("selectNuevaSubcategoria");
 
-  const btnBuscarProducto  = document.getElementById("btnBuscarProducto");
-  const btnLimpiarBusqueda = document.getElementById("btnLimpiarBusqueda");
+    const btnDescargarPlantilla = document.getElementById("btnDescargarPlantilla");
+    const btnCargaMasiva = document.getElementById("btnCargaMasiva");
 
-  const inpCodigo      = document.getElementById("codigoProd");
-  const inpDescripcion = document.getElementById("descripcionProd");
-  const inpCosto       = document.getElementById("costoProd");
-  const inpPrecio      = document.getElementById("precioProd");
-
-  const selectCategoriaProducto      = document.getElementById("selectCategoriaProducto");
-  const listaCategoriasProducto      = document.getElementById("listaCategoriasProducto");
-  const resumenCategoriasProducto    = document.getElementById("resumenCategoriasProducto");
-
-  const selectNuevaSubcategoria      = document.getElementById("selectNuevaSubcategoria");
-  const selectValorSubcategoria      = document.getElementById("valorSubcategoria");
-  const inpUnidadSubcategoria        = document.getElementById("unidadSubcategoria");
-  const listaSubcategoriasProducto   = document.getElementById("listaSubcategoriasProducto");
-  const resumenSubcategoriasProducto = document.getElementById("resumenSubcategoriasProducto");
-
-  const catProductoCodigo      = document.getElementById("catProductoCodigo");
-  const catProductoDescripcion = document.getElementById("catProductoDescripcion");
-  const subProductoCodigo      = document.getElementById("subProductoCodigo");
-  const subProductoDescripcion = document.getElementById("subProductoDescripcion");
-
-  const modalRegistro      = "#modalNuevoProducto";
-  const modalCategorias    = document.getElementById("modalCategoriasProducto");
-  const modalSubcategorias = document.getElementById("modalSubcategoriasProducto");
-
-  let modo                    = "create";
-  let idEditando              = null;
-  let categoriasTemporales    = [];
-  let subcategoriasTemporales = [];
-  let catalogoSubcats         = [];
-  let productosCache          = [];
-  let timeoutBusqueda         = null;
-  let ultimoTerminoBuscado    = "";
-
-  const norm  = (v) => (v ?? "").toString().trim();
-  const money = (v) => Number(v || 0).toFixed(2);
-
-  function campo(obj, ...keys) {
-    for (const k of keys) {
-      if (obj?.[k] !== undefined && obj?.[k] !== null) return obj[k];
+    if (btnGuardarProducto) {
+        btnGuardarProducto.addEventListener("click", guardarProducto);
     }
-    return "";
-  }
 
-  function escapeHtml(valor) {
-    return String(valor ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
+    if (buscarProductos) {
+        buscarProductos.addEventListener("input", filtrarProductos);
+    }
 
-  function showSuccess(texto) {
-    return Swal.fire({
-      icon: "success",
-      title: "Éxito",
-      text: texto,
-      confirmButtonText: "Aceptar"
+    if (btnAbrirCategoriasProducto) {
+        btnAbrirCategoriasProducto.addEventListener("click", abrirModalCategorias);
+    }
+
+    if (btnCerrarCategorias) {
+        btnCerrarCategorias.addEventListener("click", cerrarModalCategorias);
+    }
+
+    if (btnCerrarCategoriasX) {
+        btnCerrarCategoriasX.addEventListener("click", cerrarModalCategorias);
+    }
+
+    if (btnAgregarCategoriaProducto) {
+        btnAgregarCategoriaProducto.addEventListener("click", agregarCategoriaTemporal);
+    }
+
+    if (btnAbrirSubcategorias) {
+        btnAbrirSubcategorias.addEventListener("click", abrirModalSubcategorias);
+    }
+
+    if (btnCerrarSubcategorias) {
+        btnCerrarSubcategorias.addEventListener("click", cerrarModalSubcategorias);
+    }
+
+    if (btnCerrarSubcategoriasX) {
+        btnCerrarSubcategoriasX.addEventListener("click", cerrarModalSubcategorias);
+    }
+
+    if (btnAgregarSubcategoria) {
+        btnAgregarSubcategoria.addEventListener("click", agregarSubcategoriaTemporal);
+    }
+
+    if (selectNuevaSubcategoria) {
+        selectNuevaSubcategoria.addEventListener("change", cargarValoresSubcategoriaSeleccionada);
+    }
+
+    if (btnDescargarPlantilla) {
+        btnDescargarPlantilla.addEventListener("click", descargarPlantillaProductos);
+    }
+
+    if (btnCargaMasiva) {
+        btnCargaMasiva.addEventListener("click", cargarProductosMasivamente);
+    }
+
+    $("#modalNuevoProducto").on("hidden.bs.modal", limpiarFormularioProducto);
+});
+
+
+function alertaExito(mensaje) {
+    Swal.fire({
+        icon: "success",
+        title: "Correcto",
+        text: mensaje || "Operación realizada correctamente",
+        confirmButtonColor: "#28a745"
     });
-  }
+}
 
-  function showError(texto) {
-    return Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: texto,
-      confirmButtonText: "Aceptar"
+function alertaError(mensaje) {
+    Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: mensaje || "Ocurrió un error",
+        confirmButtonColor: "#d33"
     });
-  }
+}
 
-  function showWarning(texto) {
-    return Swal.fire({
-      icon: "warning",
-      title: "Atención",
-      text: texto,
-      confirmButtonText: "Aceptar"
+function alertaInfo(mensaje) {
+    Swal.fire({
+        icon: "info",
+        title: "Aviso",
+        text: mensaje || "Revisa la información",
+        confirmButtonColor: "#3085d6"
     });
-  }
+}
 
-  async function confirmDelete(texto) {
+function alertaCargando(mensaje) {
+    Swal.fire({
+        title: mensaje || "Procesando...",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => Swal.showLoading()
+    });
+}
+
+async function confirmarAccion(mensaje) {
     const result = await Swal.fire({
-      icon: "warning",
-      title: "¿Estás seguro?",
-      text: texto,
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-      reverseButtons: true
+        icon: "warning",
+        title: "¿Estás seguro?",
+        text: mensaje || "Esta acción no se puede deshacer.",
+        showCancelButton: true,
+        confirmButtonText: "Sí, continuar",
+        cancelButtonText: "Cancelar",
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6c757d"
     });
 
     return result.isConfirmed;
-  }
+}
 
-  async function apiFetch(endpoint, options = {}) {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      },
-      ...options
-    });
 
-    const data = await response.json().catch(() => null);
+async function fetchBackend(endpoint, options = {}) {
+    const response = await fetch(`${API_URL}${endpoint}`, options);
 
-    if (!response.ok) {
-      throw new Error(data?.message || "Error en la petición");
-    }
-
-    if (data && data.success === false) {
-      throw new Error(data?.message || "Operación fallida");
-    }
-
-    return data;
-  }
-
-  async function getProductosAPI() {
-    const res = await apiFetch("/api/productos/");
-    return Array.isArray(res.data) ? res.data : [];
-  }
-
-  async function buscarProductoPorFolioAPI(folio) {
-    const res = await apiFetch(`/api/productos/${encodeURIComponent(folio)}`);
-    return Array.isArray(res.data) ? res.data : [];
-  }
-
-  async function getProductoDetalleAPI(idProducto) {
-    const res = await apiFetch(`/api/productos/${idProducto}`);
-
-    if (Array.isArray(res.data)) {
-      const encontrado = res.data.find((p) => String(p.id_producto) === String(idProducto));
-      return encontrado || res.data[0] || null;
-    }
-
-    return res.data || null;
-  }
-
-  async function crearProductoAPI(payload) {
-    return await apiFetch("/api/productos/", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-  }
-
-  async function editarProductoAPI(idProducto, payload) {
-    return await apiFetch(`/api/productos/${idProducto}`, {
-      method: "PUT",
-      body: JSON.stringify(payload)
-    });
-  }
-
-  async function eliminarProductoAPI(idProducto) {
-    return await apiFetch(`/api/productos/${idProducto}`, {
-      method: "DELETE"
-    });
-  }
-
-  async function getCategoriasAPI() {
-    const res = await apiFetch("/api/categorias/");
-    return Array.isArray(res.data) ? res.data : [];
-  }
-
-  async function getSubcategoriasAPI() {
-    const res = await apiFetch("/api/subcategorias/");
-    return Array.isArray(res.data) ? res.data : [];
-  }
-
-  async function cargarCategorias() {
-    if (!selectCategoriaProducto) return;
+    let result = null;
 
     try {
-      const lista = await getCategoriasAPI();
-      selectCategoriaProducto.innerHTML = '<option value="">Elegir categoría...</option>';
-
-      lista.forEach((cat) => {
-        const opt = document.createElement("option");
-        opt.value = cat.id_cat;
-        opt.textContent = cat.nombre;
-        selectCategoriaProducto.appendChild(opt);
-      });
-    } catch (err) {
-      console.error("No se pudieron cargar las categorías:", err.message);
+        result = await response.json();
+    } catch {
+        result = null;
     }
-  }
 
-  async function cargarSubcategorias() {
-    if (!selectNuevaSubcategoria) return;
+    if (!response.ok || result?.success === false) {
+        throw new Error(result?.message || "Error en la petición.");
+    }
 
+    return result;
+}
+
+
+async function cargarProductos() {
     try {
-      catalogoSubcats = await getSubcategoriasAPI();
-      selectNuevaSubcategoria.innerHTML = '<option value="">Elegir subcategoría...</option>';
-
-      catalogoSubcats.forEach((sub) => {
-        const id = campo(sub, "id_subcat", "id");
-        const nombre = campo(sub, "nombre");
-
-        const opt = document.createElement("option");
-        opt.value = id;
-        opt.textContent = nombre;
-        selectNuevaSubcategoria.appendChild(opt);
-      });
-    } catch (err) {
-      console.error("No se pudieron cargar las subcategorías:", err.message);
+        const result = await fetchBackend("/api/productos/");
+        productos = result.data || [];
+        renderizarProductos(productos);
+    } catch (error) {
+        alertaError(error.message || "Error al cargar productos.");
     }
-  }
+}
 
-  function renderTablaDesdeLista(lista = [], esVistaGeneral = false) {
+
+async function cargarCategorias() {
+    try {
+        const result = await fetchBackend("/api/categorias/");
+        categoriasDisponibles = result.data || [];
+
+        llenarSelectCategorias("selectCategoriaProducto");
+        llenarSelectCategorias("categoriaCargaMasiva");
+
+    } catch (error) {
+        console.warn("No se pudieron cargar categorías:", error.message);
+    }
+}
+
+function llenarSelectCategorias(idSelect) {
+    const select = document.getElementById(idSelect);
+    if (!select) return;
+
+    select.innerHTML = `<option value="">Elegir categoría...</option>`;
+
+    categoriasDisponibles.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat.id_cat || cat.id_categoria || cat.id;
+        option.textContent = cat.nombre || cat.descripcion || "Categoría";
+        select.appendChild(option);
+    });
+}
+
+
+async function cargarSubcategorias() {
+    try {
+        const result = await fetchBackend("/api/subcategorias/");
+        subcategoriasDisponibles = result.data || [];
+
+        const select = document.getElementById("selectNuevaSubcategoria");
+        if (!select) return;
+
+        select.innerHTML = `<option value="">Elegir subcategoría...</option>`;
+
+        subcategoriasDisponibles.forEach((sub) => {
+            const option = document.createElement("option");
+            option.value = sub.id_subcat || sub.id_subcategoria || sub.id;
+            option.textContent = sub.nombre || sub.descripcion || "Subcategoría";
+            select.appendChild(option);
+        });
+
+    } catch (error) {
+        console.warn("No se pudieron cargar subcategorías:", error.message);
+    }
+}
+
+
+function renderizarProductos(lista) {
+    const tbody = document.querySelector("#dataTable tbody");
     if (!tbody) return;
 
-    if (!lista.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">${esVistaGeneral ? "Sin productos registrados." : "No se encontraron productos."}</td></tr>`;
-      return;
-    }
+    tbody.innerHTML = "";
 
-    tbody.innerHTML = lista.map((p) => {
-      const cats = (p.categorias || []).map((c) => c.nombre).join(", ") || "—";
-
-      return `
-        <tr data-id="${escapeHtml(p.id_producto)}" data-folio="${escapeHtml(norm(p.folio))}">
-          <td>${escapeHtml(norm(p.folio))}</td>
-          <td>${escapeHtml(norm(p.descripcion) || "—")}</td>
-          <td>$${escapeHtml(money(p.costo))}</td>
-          <td>$${escapeHtml(money(p.precio))}</td>
-          <td>${escapeHtml(cats)}</td>
-          <td>
-            <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle">
-              <i class="fas fa-eye"></i>
-            </button>
-            <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar">
-              <i class="fas fa-pen"></i>
-            </button>
-            <button type="button" class="btn btn-danger btn-circle btn-sm btn-eliminar" title="Eliminar">
-              <i class="fas fa-trash"></i>
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join("");
-  }
-
-  async function recargarProductosCache() {
-    productosCache = await getProductosAPI();
-  }
-
-  async function actualizarVistaActual() {
-    const termino = norm(inputBuscar ? inputBuscar.value : "");
-
-    if (!termino) {
-      renderTablaDesdeLista(productosCache, true);
-      return;
-    }
-
-    await buscarProductoServidor(termino);
-  }
-
-  async function cargarProductos() {
-    try {
-      await recargarProductosCache();
-      await actualizarVistaActual();
-    } catch (err) {
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar productos: ${escapeHtml(err.message)}</td></tr>`;
-      }
-    }
-  }
-
-  async function buscarProductoServidor(terminoManual = null) {
-    const termino = norm(terminoManual ?? (inputBuscar ? inputBuscar.value : ""));
-    ultimoTerminoBuscado = termino;
-
-    if (!termino) {
-      renderTablaDesdeLista(productosCache, true);
-      return;
-    }
-
-    try {
-      const resultados = await buscarProductoPorFolioAPI(termino);
-
-      if (ultimoTerminoBuscado !== termino) return;
-
-      renderTablaDesdeLista(resultados, false);
-    } catch (err) {
-      if (ultimoTerminoBuscado !== termino) return;
-
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al buscar producto: ${escapeHtml(err.message)}</td></tr>`;
-      }
-    }
-  }
-
-  async function abrirDetalle(idProducto) {
-    try {
-      const producto = await getProductoDetalleAPI(idProducto);
-
-      if (!producto) {
-        await showWarning("No se pudo obtener el detalle del producto");
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center">No hay productos registrados</td>
+            </tr>
+        `;
         return;
-      }
-
-      const detalleCodigo        = document.getElementById("detalleCodigo");
-      const detalleDescripcion   = document.getElementById("detalleDescripcion");
-      const detalleCosto         = document.getElementById("detalleCosto");
-      const detallePrecio        = document.getElementById("detallePrecio");
-      const detalleCategorias    = document.getElementById("detalleCategorias");
-      const detalleSubcategorias = document.getElementById("detalleSubcategorias");
-
-      const cats = (producto.categorias || []).map((c) => c.nombre).join(", ");
-      const subcats = producto.subcategorias || [];
-
-      if (detalleCodigo) detalleCodigo.textContent = norm(producto.folio);
-      if (detalleDescripcion) detalleDescripcion.textContent = norm(producto.descripcion) || "—";
-      if (detalleCosto) detalleCosto.textContent = `$${money(producto.costo)}`;
-      if (detallePrecio) detallePrecio.textContent = `$${money(producto.precio)}`;
-      if (detalleCategorias) detalleCategorias.textContent = cats || "Sin categorías";
-
-      if (detalleSubcategorias) {
-        detalleSubcategorias.textContent = subcats.length
-          ? subcats.map((sub) => {
-              const nombre = campo(sub, "nombre");
-              const valor  = campo(sub, "valor_numerico", "valor");
-              const unidad = campo(sub, "unidad");
-              return `${nombre}: ${valor} ${unidad}`;
-            }).join(", ")
-          : "Sin subcategorías";
-      }
-
-      $("#modalDetalleProducto").modal("show");
-    } catch (err) {
-      await showError(err.message || "Error al cargar el detalle");
     }
-  }
 
-  async function abrirEditar(idProducto) {
-    try {
-      const producto = await getProductoDetalleAPI(idProducto);
+    lista.forEach((producto) => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${producto.folio || ""}</td>
+                <td>${producto.descripcion || ""}</td>
+                <td>${formatoMoneda(producto.costo || 0)}</td>
+                <td>${formatoMoneda(producto.precio || 0)}</td>
+                <td>${obtenerCategoriasTexto(producto)}</td>
+                <td>
+                      <div class="d-flex justify-content-center align-items-center flex-nowrap">
+                        <button class="btn btn-info btn-sm btn-circle mx-1" onclick="verDetalleProducto(${producto.id_producto})">
+                          <i class="fas fa-eye"></i>
+                        </button>
 
-      if (!producto) {
-        await showWarning("No se pudo cargar el producto");
-        return;
-      }
+                        <button class="btn btn-warning btn-sm btn-circle mx-1" onclick="abrirEditarProducto(${producto.id_producto})">
+                          <i class="fas fa-edit"></i>
+                        </button>
 
-      modo       = "edit";
-      idEditando = producto.id_producto;
+                        <button class="btn btn-danger btn-sm btn-circle mx-1" onclick="eliminarProducto(${producto.id_producto})">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                  </td>
+        `;
+    });
+}
 
-      inpCodigo.value      = norm(producto.folio);
-      inpDescripcion.value = norm(producto.descripcion);
-      inpCosto.value       = producto.costo ?? "";
-      inpPrecio.value      = producto.precio ?? "";
-      inpCodigo.disabled   = true;
+function obtenerCategoriasTexto(producto) {
+    if (!producto.categorias || !Array.isArray(producto.categorias)) return "";
+    return producto.categorias.map((cat) => cat.nombre).join(", ");
+}
 
-      categoriasTemporales = (producto.categorias || []).map((c) => ({
-        id_cat: c.id_cat,
-        nombre: c.nombre
-      }));
+function filtrarProductos() {
+    const texto = document.getElementById("buscarProductos")?.value.toLowerCase() || "";
 
-      subcategoriasTemporales = (producto.subcategorias || []).map((sub) => ({
-        id_subcat:      campo(sub, "id_subcat", "id"),
-        nombre:         campo(sub, "nombre"),
-        valor_numerico: Number(campo(sub, "valor_numerico", "valor")),
-        unidad:         campo(sub, "unidad")
-      }));
+    const filtrados = productos.filter((producto) => {
+        return (
+            String(producto.folio || "").toLowerCase().includes(texto) ||
+            String(producto.descripcion || "").toLowerCase().includes(texto) ||
+            obtenerCategoriasTexto(producto).toLowerCase().includes(texto)
+        );
+    });
 
-      renderCategoriasTemporales();
-      renderSubcategoriasTemporales();
-      actualizarEncabezadosVentanas();
+    renderizarProductos(filtrados);
+}
 
-      if (tituloModal) tituloModal.textContent = `Editar Producto ${producto.folio}`;
-      if (btnGuardar) btnGuardar.textContent = "Guardar Cambios";
 
-      $(modalRegistro).modal("show");
-    } catch (err) {
-      await showError(err.message || "Error al cargar el producto");
-    }
-  }
-
-  async function guardarProducto() {
-    const folio       = norm(inpCodigo ? inpCodigo.value : "");
-    const descripcion = norm(inpDescripcion ? inpDescripcion.value : "");
-    const costo       = inpCosto && inpCosto.value !== "" ? Number(inpCosto.value) : null;
-    const precio      = inpPrecio && inpPrecio.value !== "" ? Number(inpPrecio.value) : null;
+async function guardarProducto() {
+    const folio = document.getElementById("codigoProd")?.value.trim();
+    const descripcion = document.getElementById("descripcionProd")?.value.trim();
+    const costo = Number(document.getElementById("costoProd")?.value || 0);
+    const precio = Number(document.getElementById("precioProd")?.value || 0);
 
     const payload = {
-      descripcion,
-      costo,
-      precio,
-      categorias_ids: categoriasTemporales.map((c) => c.id_cat),
-      subcategorias_ids: subcategoriasTemporales.map((s) => s.id_subcat)
+        descripcion,
+        costo,
+        precio,
+        categorias_ids: categoriasTemporales.map((cat) => Number(cat.id_cat)),
+        subcategorias_ids: subcategoriasTemporales.map((sub) => Number(sub.id_subcat))
     };
 
     if (modo === "create") {
-      payload.folio = folio;
+        payload.folio = folio;
     }
 
     try {
-      let res;
+        alertaCargando("Guardando producto...");
 
-      if (modo === "create") {
-        res = await crearProductoAPI(payload);
-      } else {
-        res = await editarProductoAPI(idEditando, payload);
-      }
+        let endpoint = "/api/productos/";
+        let method = "POST";
 
-      await cargarProductos();
-      resetFormulario();
-      $(modalRegistro).modal("hide");
+        if (modo === "edit" && idProductoEditando) {
+            endpoint = `/api/productos/${idProductoEditando}`;
+            method = "PUT";
+        }
 
-      await showSuccess(
-        res?.message ||
-        (modo === "create"
-          ? "Producto registrado correctamente"
-          : "Producto actualizado correctamente")
-      );
-    } catch (err) {
-      await showError(err.message || "Error al guardar");
+        const result = await fetchBackend(endpoint, {
+            method,
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        Swal.close();
+        alertaExito(result.message || "Producto guardado correctamente.");
+
+        $("#modalNuevoProducto").modal("hide");
+        limpiarFormularioProducto();
+        cargarProductos();
+
+    } catch (error) {
+        Swal.close();
+        alertaError(error.message || "Error al guardar producto.");
     }
-  }
+}
 
-  async function eliminarProducto(idProducto, folio) {
-    const confirmado = await confirmDelete(`Se eliminará el producto ${folio}.`);
+
+async function abrirEditarProducto(idProducto) {
+    try {
+        const result = await fetchBackend(`/api/productos/${idProducto}`);
+        const producto = result.data;
+
+        modo = "edit";
+        idProductoEditando = idProducto;
+
+        setValue("codigoProd", producto.folio || "");
+        setValue("descripcionProd", producto.descripcion || "");
+        setValue("costoProd", producto.costo || "");
+        setValue("precioProd", producto.precio || "");
+
+        const inputCodigo = document.getElementById("codigoProd");
+        if (inputCodigo) inputCodigo.disabled = true;
+
+        categoriasTemporales = (producto.categorias || []).map((cat) => ({
+            id_cat: cat.id_cat || cat.id_categoria || cat.id,
+            nombre: cat.nombre || cat.descripcion || "Categoría"
+        }));
+
+        subcategoriasTemporales = (producto.subcategorias || []).map((sub) => ({
+            id_subcat: sub.id_subcat || sub.id_subcategoria || sub.id,
+            nombre: sub.nombre || sub.descripcion || "Subcategoría",
+            valor_numerico: sub.valor_numerico || sub.valor || "",
+            unidad: sub.unidad || ""
+        }));
+
+        actualizarResumenCategorias();
+        actualizarResumenSubcategorias();
+        renderizarCategoriasTemporales();
+        renderizarSubcategoriasTemporales();
+
+        document.getElementById("tituloModal").textContent = "Editar Producto";
+        $("#modalNuevoProducto").modal("show");
+
+    } catch (error) {
+        alertaError(error.message || "Error al obtener producto.");
+    }
+}
+
+
+async function eliminarProducto(idProducto) {
+    const confirmado = await confirmarAccion("El producto será eliminado.");
 
     if (!confirmado) return;
 
     try {
-      const res = await eliminarProductoAPI(idProducto);
-      await cargarProductos();
-      await showSuccess(res?.message || "Producto eliminado correctamente");
-    } catch (err) {
-      await showError(err.message || "Error al eliminar");
+        alertaCargando("Eliminando producto...");
+
+        const result = await fetchBackend(`/api/productos/${idProducto}`, {
+            method: "DELETE"
+        });
+
+        Swal.close();
+        alertaExito(result.message || "Producto eliminado correctamente.");
+        cargarProductos();
+
+    } catch (error) {
+        Swal.close();
+        alertaError(error.message || "Error al eliminar producto.");
     }
-  }
+}
 
-  function actualizarEncabezadosVentanas() {
-    const codigo      = norm(inpCodigo ? inpCodigo.value : "") || "Nuevo producto";
-    const descripcion = norm(inpDescripcion ? inpDescripcion.value : "") || "Sin definir";
 
-    if (catProductoCodigo) catProductoCodigo.textContent = codigo;
-    if (catProductoDescripcion) catProductoDescripcion.textContent = descripcion;
-    if (subProductoCodigo) subProductoCodigo.textContent = codigo;
-    if (subProductoDescripcion) subProductoDescripcion.textContent = descripcion;
-  }
+async function verDetalleProducto(idProducto) {
+    try {
+        const result = await fetchBackend(`/api/productos/${idProducto}`);
+        const producto = result.data;
 
-  function actualizarResumenCategorias() {
-    if (!resumenCategoriasProducto) return;
-    const n = categoriasTemporales.length;
-    resumenCategoriasProducto.textContent = `${n} ${n === 1 ? "categoría registrada" : "categorías registradas"}`;
-  }
+        setText("detalleCodigo", producto.folio || "");
+        setText("detalleDescripcion", producto.descripcion || "");
+        setText("detalleCosto", formatoMoneda(producto.costo || 0));
+        setText("detallePrecio", formatoMoneda(producto.precio || 0));
+        setText("detalleCategorias", obtenerCategoriasTexto(producto));
 
-  function actualizarResumenSubcategorias() {
-    if (!resumenSubcategoriasProducto) return;
-    const n = subcategoriasTemporales.length;
-    resumenSubcategoriasProducto.textContent = `${n} ${n === 1 ? "subcategoría registrada" : "subcategorías registradas"}`;
-  }
+        const subcategorias = producto.subcategorias || [];
+        const subTexto = subcategorias.length
+            ? subcategorias.map((sub) => {
+                const valor = sub.valor_numerico || "";
+                const unidad = sub.unidad || "";
+                return `${sub.nombre} ${valor} ${unidad}`.trim();
+            }).join(", ")
+            : "Sin subcategorías";
 
-  function renderCategoriasTemporales() {
-    if (!listaCategoriasProducto) return;
+        setText("detalleSubcategorias", subTexto);
 
-    if (categoriasTemporales.length === 0) {
-      listaCategoriasProducto.innerHTML = `<div class="text-muted small">No hay categorías agregadas.</div>`;
-      actualizarResumenCategorias();
-      return;
+        $("#modalDetalleProducto").modal("show");
+
+    } catch (error) {
+        alertaError(error.message || "Error al obtener detalle del producto.");
+    }
+}
+
+
+function abrirModalCategorias() {
+    setText("catProductoCodigo", document.getElementById("codigoProd")?.value || "Nuevo producto");
+    setText("catProductoDescripcion", document.getElementById("descripcionProd")?.value || "Sin definir");
+
+    renderizarCategoriasTemporales();
+
+    const modal = document.getElementById("modalCategoriasProducto");
+    if (modal) modal.style.display = "flex";
+}
+
+function cerrarModalCategorias() {
+    const modal = document.getElementById("modalCategoriasProducto");
+    if (modal) modal.style.display = "none";
+}
+
+function agregarCategoriaTemporal() {
+    const select = document.getElementById("selectCategoriaProducto");
+    const idCat = select?.value;
+
+    if (!idCat) {
+        alertaInfo("Selecciona una categoría.");
+        return;
     }
 
-    listaCategoriasProducto.innerHTML = `
-      <div>
-        ${categoriasTemporales.map((cat, i) => `
-          <span class="badge badge-primary mr-1 mb-1 p-2" style="font-size:0.85rem;">
-            ${escapeHtml(cat.nombre)}
-            <button
-              type="button"
-              class="btn-quitar-categoria-producto ml-1"
-              data-index="${i}"
-              title="Quitar"
-              style="background:none;border:none;color:#fff;cursor:pointer;padding:0;line-height:1;"
-            >&times;</button>
-          </span>
-        `).join("")}
-      </div>
-    `;
+    const existe = categoriasTemporales.some((cat) => String(cat.id_cat) === String(idCat));
+
+    if (existe) {
+        alertaInfo("La categoría ya fue agregada.");
+        return;
+    }
+
+    const optionText = select.options[select.selectedIndex].textContent;
+
+    categoriasTemporales.push({
+        id_cat: Number(idCat),
+        nombre: optionText
+    });
+
+    select.value = "";
 
     actualizarResumenCategorias();
-  }
+    renderizarCategoriasTemporales();
+}
 
-  function renderSubcategoriasTemporales() {
-    if (!listaSubcategoriasProducto) return;
+function eliminarCategoriaTemporal(idCat) {
+    categoriasTemporales = categoriasTemporales.filter((cat) => String(cat.id_cat) !== String(idCat));
+    actualizarResumenCategorias();
+    renderizarCategoriasTemporales();
+}
 
-    if (subcategoriasTemporales.length === 0) {
-      listaSubcategoriasProducto.innerHTML = `<div class="text-muted small">No hay subcategorías agregadas.</div>`;
-      actualizarResumenSubcategorias();
-      return;
+function renderizarCategoriasTemporales() {
+    const contenedor = document.getElementById("listaCategoriasProducto");
+    if (!contenedor) return;
+
+    if (categoriasTemporales.length === 0) {
+        contenedor.innerHTML = `<p class="text-muted mb-0">No hay categorías agregadas.</p>`;
+        return;
     }
 
-    listaSubcategoriasProducto.innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-bordered table-sm mb-0">
-          <thead class="thead-light">
-            <tr>
-              <th>Nombre</th>
-              <th>Valor</th>
-              <th>Unidad</th>
-              <th style="width:80px;">Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${subcategoriasTemporales.map((sub, i) => `
-              <tr>
-                <td>${escapeHtml(sub.nombre)}</td>
-                <td>${escapeHtml(sub.valor_numerico)}</td>
-                <td>${escapeHtml(sub.unidad)}</td>
-                <td>
-                  <button type="button" class="btn btn-danger btn-sm btn-quitar-subcategoria" data-index="${i}">
-                    Quitar
-                  </button>
-                </td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-      </div>
-    `;
+    contenedor.innerHTML = categoriasTemporales.map((cat) => `
+        <span class="badge badge-primary p-2 mr-2 mb-2">
+            ${cat.nombre}
+            <button type="button" class="btn btn-sm text-white p-0 ml-2" onclick="eliminarCategoriaTemporal(${cat.id_cat})">
+                ×
+            </button>
+        </span>
+    `).join("");
+}
+
+function actualizarResumenCategorias() {
+    setText("resumenCategoriasProducto", `${categoriasTemporales.length} categorías registradas`);
+}
+
+
+function abrirModalSubcategorias() {
+    setText("subProductoCodigo", document.getElementById("codigoProd")?.value || "Nuevo producto");
+    setText("subProductoDescripcion", document.getElementById("descripcionProd")?.value || "Sin definir");
+
+    renderizarSubcategoriasTemporales();
+
+    const modal = document.getElementById("modalSubcategoriasProducto");
+    if (modal) modal.style.display = "flex";
+}
+
+function cerrarModalSubcategorias() {
+    const modal = document.getElementById("modalSubcategoriasProducto");
+    if (modal) modal.style.display = "none";
+}
+
+function cargarValoresSubcategoriaSeleccionada() {
+    const idSub = document.getElementById("selectNuevaSubcategoria")?.value;
+    const selectValor = document.getElementById("valorSubcategoria");
+    const inputUnidad = document.getElementById("unidadSubcategoria");
+
+    if (!selectValor || !inputUnidad) return;
+
+    selectValor.innerHTML = `<option value="">Elegir valor...</option>`;
+    inputUnidad.value = "";
+
+    const sub = subcategoriasDisponibles.find((item) => {
+        return String(item.id_subcat || item.id_subcategoria || item.id) === String(idSub);
+    });
+
+    if (!sub) return;
+
+    if (sub.valor_numerico !== undefined && sub.valor_numerico !== null) {
+        const option = document.createElement("option");
+        option.value = sub.valor_numerico;
+        option.textContent = sub.valor_numerico;
+        selectValor.appendChild(option);
+    }
+
+    if (sub.valor !== undefined && sub.valor !== null) {
+        const option = document.createElement("option");
+        option.value = sub.valor;
+        option.textContent = sub.valor;
+        selectValor.appendChild(option);
+    }
+
+    inputUnidad.value = sub.unidad || "";
+}
+
+function agregarSubcategoriaTemporal() {
+    const selectSub = document.getElementById("selectNuevaSubcategoria");
+    const selectValor = document.getElementById("valorSubcategoria");
+    const unidad = document.getElementById("unidadSubcategoria")?.value || "";
+
+    const idSub = selectSub?.value;
+    const valor = selectValor?.value;
+
+    if (!idSub) {
+        alertaInfo("Selecciona una subcategoría.");
+        return;
+    }
+
+    const existe = subcategoriasTemporales.some((sub) => String(sub.id_subcat) === String(idSub));
+
+    if (existe) {
+        alertaInfo("La subcategoría ya fue agregada.");
+        return;
+    }
+
+    const nombre = selectSub.options[selectSub.selectedIndex].textContent;
+
+    subcategoriasTemporales.push({
+        id_subcat: Number(idSub),
+        nombre,
+        valor_numerico: valor,
+        unidad
+    });
+
+    selectSub.value = "";
+    selectValor.innerHTML = `<option value="">Elegir valor...</option>`;
+    document.getElementById("unidadSubcategoria").value = "";
 
     actualizarResumenSubcategorias();
-  }
+    renderizarSubcategoriasTemporales();
+}
 
-  function resetFormulario() {
-    if (form) form.reset();
+function eliminarSubcategoriaTemporal(idSub) {
+    subcategoriasTemporales = subcategoriasTemporales.filter((sub) => String(sub.id_subcat) !== String(idSub));
+    actualizarResumenSubcategorias();
+    renderizarSubcategoriasTemporales();
+}
 
-    categoriasTemporales    = [];
-    subcategoriasTemporales = [];
-    idEditando              = null;
-    modo                    = "create";
+function renderizarSubcategoriasTemporales() {
+    const contenedor = document.getElementById("listaSubcategoriasProducto");
+    if (!contenedor) return;
 
-    if (inpCodigo) inpCodigo.disabled = false;
-    if (selectCategoriaProducto) selectCategoriaProducto.value = "";
-    if (selectNuevaSubcategoria) selectNuevaSubcategoria.value = "";
-    if (selectValorSubcategoria) selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
-    if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = "";
-
-    renderCategoriasTemporales();
-    renderSubcategoriasTemporales();
-    actualizarEncabezadosVentanas();
-
-    if (tituloModal) tituloModal.textContent = "Registrar Nuevo Producto";
-    if (btnGuardar) btnGuardar.textContent = "Guardar Producto";
-  }
-
-  function cerrarVentanaCategorias() {
-    if (modalCategorias) modalCategorias.style.display = "none";
-  }
-
-  function cerrarVentanaSubcategorias() {
-    if (modalSubcategorias) modalSubcategorias.style.display = "none";
-  }
-
-  if (btnAbrirCategoriasProducto) {
-    btnAbrirCategoriasProducto.addEventListener("click", () => {
-      actualizarEncabezadosVentanas();
-      renderCategoriasTemporales();
-      if (modalCategorias) modalCategorias.style.display = "flex";
-    });
-  }
-
-  if (btnCerrarCategorias) btnCerrarCategorias.addEventListener("click", cerrarVentanaCategorias);
-  if (btnCerrarCategoriasX) btnCerrarCategoriasX.addEventListener("click", cerrarVentanaCategorias);
-
-  if (btnAgregarCategoriaProducto) {
-    btnAgregarCategoriaProducto.addEventListener("click", async () => {
-      const idCat = norm(selectCategoriaProducto ? selectCategoriaProducto.value : "");
-
-      if (!idCat) {
-        await showWarning("Selecciona una categoría");
+    if (subcategoriasTemporales.length === 0) {
+        contenedor.innerHTML = `<p class="text-muted mb-0">No hay subcategorías agregadas.</p>`;
         return;
-      }
-
-      const opt = selectCategoriaProducto.options[selectCategoriaProducto.selectedIndex];
-      const nombre = opt.textContent;
-
-      if (categoriasTemporales.some((c) => String(c.id_cat) === idCat)) {
-        await showWarning("Esa categoría ya fue agregada");
-        return;
-      }
-
-      categoriasTemporales.push({ id_cat: Number(idCat), nombre });
-      renderCategoriasTemporales();
-      selectCategoriaProducto.value = "";
-    });
-  }
-
-  if (listaCategoriasProducto) {
-    listaCategoriasProducto.addEventListener("click", (e) => {
-      const btn = e.target.closest(".btn-quitar-categoria-producto");
-      if (!btn) return;
-
-      const i = Number(btn.getAttribute("data-index"));
-      categoriasTemporales.splice(i, 1);
-      renderCategoriasTemporales();
-    });
-  }
-
-  if (btnAbrirSubcategorias) {
-    btnAbrirSubcategorias.addEventListener("click", () => {
-      actualizarEncabezadosVentanas();
-      renderSubcategoriasTemporales();
-      if (modalSubcategorias) modalSubcategorias.style.display = "flex";
-    });
-  }
-
-  if (btnCerrarSubcategorias) btnCerrarSubcategorias.addEventListener("click", cerrarVentanaSubcategorias);
-  if (btnCerrarSubcategoriasX) btnCerrarSubcategoriasX.addEventListener("click", cerrarVentanaSubcategorias);
-
-  if (selectNuevaSubcategoria) {
-    selectNuevaSubcategoria.addEventListener("change", () => {
-      const idSubcat = norm(selectNuevaSubcategoria.value);
-
-      if (selectValorSubcategoria) selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
-      if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = "";
-
-      if (!idSubcat) return;
-
-      const sub = catalogoSubcats.find((s) => String(campo(s, "id_subcat", "id")) === idSubcat);
-      if (!sub) return;
-
-      const valor  = campo(sub, "valor_numerico", "valor");
-      const unidad = campo(sub, "unidad");
-
-      if (selectValorSubcategoria) {
-        selectValorSubcategoria.innerHTML = `
-          <option value="">Elegir valor...</option>
-          <option value="${escapeHtml(valor)}">${escapeHtml(valor)}</option>
-        `;
-      }
-
-      if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = unidad;
-    });
-  }
-
-  if (btnAgregarSubcategoria) {
-    btnAgregarSubcategoria.addEventListener("click", async () => {
-      const idSubcat = norm(selectNuevaSubcategoria ? selectNuevaSubcategoria.value : "");
-      const valorSel = norm(selectValorSubcategoria ? selectValorSubcategoria.value : "");
-
-      if (!idSubcat) {
-        await showWarning("Selecciona una subcategoría");
-        return;
-      }
-
-      if (!valorSel) {
-        await showWarning("Selecciona un valor");
-        return;
-      }
-
-      const sub = catalogoSubcats.find((s) => String(campo(s, "id_subcat", "id")) === idSubcat);
-
-      if (!sub) {
-        await showWarning("Subcategoría no encontrada");
-        return;
-      }
-
-      if (subcategoriasTemporales.some((s) => String(s.id_subcat) === idSubcat)) {
-        await showWarning("Esa subcategoría ya fue agregada");
-        return;
-      }
-
-      subcategoriasTemporales.push({
-        id_subcat:      campo(sub, "id_subcat", "id"),
-        nombre:         campo(sub, "nombre"),
-        valor_numerico: campo(sub, "valor_numerico", "valor"),
-        unidad:         campo(sub, "unidad")
-      });
-
-      renderSubcategoriasTemporales();
-
-      if (selectNuevaSubcategoria) selectNuevaSubcategoria.value = "";
-      if (selectValorSubcategoria) selectValorSubcategoria.innerHTML = '<option value="">Elegir valor...</option>';
-      if (inpUnidadSubcategoria) inpUnidadSubcategoria.value = "";
-    });
-  }
-
-  if (listaSubcategoriasProducto) {
-    listaSubcategoriasProducto.addEventListener("click", (e) => {
-      const btn = e.target.closest(".btn-quitar-subcategoria");
-      if (!btn) return;
-
-      const i = Number(btn.getAttribute("data-index"));
-      subcategoriasTemporales.splice(i, 1);
-      renderSubcategoriasTemporales();
-    });
-  }
-
-  if (btnGuardar) {
-    btnGuardar.addEventListener("click", (e) => {
-      e.preventDefault();
-      guardarProducto();
-    });
-  }
-
-  if (tbody) {
-    tbody.addEventListener("click", async (e) => {
-      const tr = e.target.closest("tr");
-      if (!tr) return;
-
-      const idProducto = tr.getAttribute("data-id");
-      const folio = tr.getAttribute("data-folio") || idProducto;
-
-      if (!idProducto) return;
-
-      if (e.target.closest(".btn-detalle")) {
-        await abrirDetalle(idProducto);
-        return;
-      }
-
-      if (e.target.closest(".btn-editar")) {
-        await abrirEditar(idProducto);
-        return;
-      }
-
-      if (e.target.closest(".btn-eliminar")) {
-        await eliminarProducto(idProducto, folio);
-      }
-    });
-  }
-
-  if (inputBuscar) {
-    inputBuscar.addEventListener("input", () => {
-      clearTimeout(timeoutBusqueda);
-
-      const termino = norm(inputBuscar.value);
-
-      if (!termino) {
-        ultimoTerminoBuscado = "";
-        renderTablaDesdeLista(productosCache, true);
-        return;
-      }
-
-      timeoutBusqueda = setTimeout(async () => {
-        await buscarProductoServidor(termino);
-      }, 400);
-    });
-
-    inputBuscar.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        clearTimeout(timeoutBusqueda);
-        await buscarProductoServidor();
-      }
-    });
-  }
-
-  if (btnBuscarProducto) {
-    btnBuscarProducto.addEventListener("click", async () => {
-      clearTimeout(timeoutBusqueda);
-      await buscarProductoServidor();
-    });
-  }
-
-  if (btnLimpiarBusqueda) {
-    btnLimpiarBusqueda.addEventListener("click", () => {
-      clearTimeout(timeoutBusqueda);
-      ultimoTerminoBuscado = "";
-      if (inputBuscar) inputBuscar.value = "";
-      renderTablaDesdeLista(productosCache, true);
-    });
-  }
-
-  $(modalRegistro).on("show.bs.modal", function () {
-    if (modo !== "edit") resetFormulario();
-  });
-
-  $(modalRegistro).on("hidden.bs.modal", function () {
-    resetFormulario();
-  });
-
-  async function cargarDatosIniciales() {
-    try {
-      await Promise.all([cargarCategorias(), cargarSubcategorias()]);
-      await cargarProductos();
-    } catch (err) {
-      console.error("Error en carga inicial:", err.message);
     }
-  }
 
-  cargarDatosIniciales();
-});
+    contenedor.innerHTML = subcategoriasTemporales.map((sub) => `
+        <span class="badge badge-success p-2 mr-2 mb-2">
+            ${sub.nombre} ${sub.valor_numerico || ""} ${sub.unidad || ""}
+            <button type="button" class="btn btn-sm text-white p-0 ml-2" onclick="eliminarSubcategoriaTemporal(${sub.id_subcat})">
+                ×
+            </button>
+        </span>
+    `).join("");
+}
+
+function actualizarResumenSubcategorias() {
+    setText("resumenSubcategoriasProducto", `${subcategoriasTemporales.length} subcategorías registradas`);
+}
+
+
+async function descargarPlantillaProductos() {
+    const idCategoria = document.getElementById("categoriaCargaMasiva")?.value;
+
+    if (!idCategoria) {
+        alertaInfo("Selecciona una categoría para descargar la plantilla.");
+        return;
+    }
+
+    try {
+        alertaCargando("Generando plantilla...");
+
+        const response = await fetch(`${API_URL}/api/productos/plantilla/${idCategoria}`);
+
+        if (!response.ok) {
+            let result = null;
+
+            try {
+                result = await response.json();
+            } catch {
+                result = null;
+            }
+
+            Swal.close();
+            alertaError(result?.message || "Error al generar la plantilla.");
+            return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `plantilla_productos_categoria_${idCategoria}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        Swal.close();
+        alertaExito("Plantilla descargada correctamente.");
+
+    } catch (error) {
+        console.error("Error:", error);
+        Swal.close();
+        alertaError("Error al conectar con el servidor.");
+    }
+}
+
+
+async function cargarProductosMasivamente() {
+    const idCategoria = document.getElementById("categoriaCargaMasiva")?.value;
+    const inputArchivo = document.getElementById("archivoCargaMasiva");
+    const archivo = inputArchivo?.files[0];
+
+    if (!idCategoria) {
+        alertaInfo("Selecciona una categoría.");
+        return;
+    }
+
+    if (!archivo) {
+        alertaInfo("Selecciona un archivo Excel.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("archivo", archivo);
+
+    try {
+        alertaCargando("Cargando productos...");
+
+        const response = await fetch(`${API_URL}/api/productos/carga-masiva/${idCategoria}`, {
+            method: "POST",
+            body: formData
+        });
+
+        let result = null;
+
+        try {
+            result = await response.json();
+        } catch {
+            result = null;
+        }
+
+        Swal.close();
+
+        if (!response.ok || result?.success === false) {
+            alertaError(result?.message || "Error al cargar productos.");
+            return;
+        }
+
+        alertaExito(result?.message || "Productos cargados correctamente.");
+
+        inputArchivo.value = "";
+        cargarProductos();
+
+    } catch (error) {
+        console.error("Error:", error);
+        Swal.close();
+        alertaError("Error al conectar con el servidor.");
+    }
+}
+
+
+function limpiarFormularioProducto() {
+    modo = "create";
+    idProductoEditando = null;
+
+    setValue("codigoProd", "");
+    setValue("descripcionProd", "");
+    setValue("costoProd", "");
+    setValue("precioProd", "");
+
+    categoriasTemporales = [];
+    subcategoriasTemporales = [];
+
+    actualizarResumenCategorias();
+    actualizarResumenSubcategorias();
+    renderizarCategoriasTemporales();
+    renderizarSubcategoriasTemporales();
+
+    const inputCodigo = document.getElementById("codigoProd");
+    if (inputCodigo) inputCodigo.disabled = false;
+
+    const titulo = document.getElementById("tituloModal");
+    if (titulo) titulo.textContent = "Registrar Nuevo Producto";
+}
+
+function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.value = value;
+}
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+}
+
+function formatoMoneda(valor) {
+    return Number(valor || 0).toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN"
+    });
+}
+
+window.cargarProductos = cargarProductos;
+window.abrirEditarProducto = abrirEditarProducto;
+window.eliminarProducto = eliminarProducto;
+window.verDetalleProducto = verDetalleProducto;
+window.eliminarCategoriaTemporal = eliminarCategoriaTemporal;
+window.eliminarSubcategoriaTemporal = eliminarSubcategoriaTemporal;
+window.descargarPlantillaProductos = descargarPlantillaProductos;
+window.cargarProductosMasivamente = cargarProductosMasivamente;

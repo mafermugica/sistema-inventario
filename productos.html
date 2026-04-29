@@ -50,6 +50,21 @@
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
         overflow: hidden;
     }
+
+    .btn-circle {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+.btn-circle i {
+        font-size: 13px;
+    }
 </style>
 
 </head>
@@ -274,6 +289,34 @@
     <i class="fas fa-plus fa-sm text-white-50"></i> Agregar Producto
 </a>
     </div>
+    <div class="px-4 py-3 border-bottom">
+    <div class="d-flex align-items-center flex-wrap">
+
+        <span class="font-weight-bold text-primary mr-3 mb-2">
+            Carga masiva:
+        </span>
+
+        <select class="form-control form-control-sm mr-2 mb-2" id="categoriaCargaMasiva" style="max-width: 220px;">
+            <option value="">Elegir categoría...</option>
+        </select>
+
+        <button type="button" class="btn btn-info btn-sm mr-2 mb-2" id="btnDescargarPlantilla">
+            <i class="fas fa-file-download"></i> Plantilla
+        </button>
+
+        <div class="custom-file mr-2 mb-2" style="max-width: 260px;">
+            <input type="file" class="custom-file-input" id="archivoCargaMasiva" accept=".xlsx,.xls">
+            <label class="custom-file-label" for="archivoCargaMasiva" id="labelArchivoCarga">
+                Archivo Excel
+            </label>
+        </div>
+
+        <button type="button" class="btn btn-success btn-sm mb-2" id="btnCargaMasiva">
+            <i class="fas fa-file-excel"></i> Cargar
+        </button>
+
+    </div>
+</div>
 
     <div class="card-body">
         <div class="table-responsive">
@@ -285,7 +328,7 @@
                         <th>Costo</th>
                         <th>Precio</th>
                         <th>Categorías</th>
-                        <th style="width: 100px;">Acciones</th>
+                        <th style="width: 160px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
