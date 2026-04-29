@@ -71,6 +71,47 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll("'", "&#039;");
   }
 
+  function showSuccess(texto) {
+    return Swal.fire({
+      icon: "success",
+      title: "Éxito",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showError(texto) {
+    return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showWarning(texto) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Atención",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  async function confirmDelete(texto) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Estás seguro?",
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true
+    });
+
+    return result.isConfirmed;
+  }
+
   async function apiFetch(endpoint, options = {}) {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
@@ -272,7 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const producto = await getProductoDetalleAPI(idProducto);
 
       if (!producto) {
-        alert("No se pudo obtener el detalle del producto");
+        await showWarning("No se pudo obtener el detalle del producto");
         return;
       }
 
@@ -305,7 +346,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalDetalleProducto").modal("show");
     } catch (err) {
-      alert(err.message || "Error al cargar el detalle");
+      await showError(err.message || "Error al cargar el detalle");
     }
   }
 
@@ -314,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const producto = await getProductoDetalleAPI(idProducto);
 
       if (!producto) {
-        alert("No se pudo cargar el producto");
+        await showWarning("No se pudo cargar el producto");
         return;
       }
 
@@ -348,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $(modalRegistro).modal("show");
     } catch (err) {
-      alert(err.message || "Error al cargar el producto");
+      await showError(err.message || "Error al cargar el producto");
     }
   }
 
@@ -382,21 +423,29 @@ document.addEventListener("DOMContentLoaded", () => {
       await cargarProductos();
       resetFormulario();
       $(modalRegistro).modal("hide");
-      alert(res?.message || "Producto guardado correctamente");
+
+      await showSuccess(
+        res?.message ||
+        (modo === "create"
+          ? "Producto registrado correctamente"
+          : "Producto actualizado correctamente")
+      );
     } catch (err) {
-      alert(err.message || "Error al guardar");
+      await showError(err.message || "Error al guardar");
     }
   }
 
   async function eliminarProducto(idProducto, folio) {
-    if (!confirm(`¿Eliminar el producto ${folio}?`)) return;
+    const confirmado = await confirmDelete(`Se eliminará el producto ${folio}.`);
+
+    if (!confirmado) return;
 
     try {
       const res = await eliminarProductoAPI(idProducto);
       await cargarProductos();
-      alert(res?.message || "Producto eliminado correctamente");
+      await showSuccess(res?.message || "Producto eliminado correctamente");
     } catch (err) {
-      alert(err.message || "Error al eliminar");
+      await showError(err.message || "Error al eliminar");
     }
   }
 
@@ -534,11 +583,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnCerrarCategoriasX) btnCerrarCategoriasX.addEventListener("click", cerrarVentanaCategorias);
 
   if (btnAgregarCategoriaProducto) {
-    btnAgregarCategoriaProducto.addEventListener("click", () => {
+    btnAgregarCategoriaProducto.addEventListener("click", async () => {
       const idCat = norm(selectCategoriaProducto ? selectCategoriaProducto.value : "");
 
       if (!idCat) {
-        alert("Selecciona una categoría");
+        await showWarning("Selecciona una categoría");
         return;
       }
 
@@ -546,7 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const nombre = opt.textContent;
 
       if (categoriasTemporales.some((c) => String(c.id_cat) === idCat)) {
-        alert("Esa categoría ya fue agregada");
+        await showWarning("Esa categoría ya fue agregada");
         return;
       }
 
@@ -605,29 +654,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (btnAgregarSubcategoria) {
-    btnAgregarSubcategoria.addEventListener("click", () => {
+    btnAgregarSubcategoria.addEventListener("click", async () => {
       const idSubcat = norm(selectNuevaSubcategoria ? selectNuevaSubcategoria.value : "");
       const valorSel = norm(selectValorSubcategoria ? selectValorSubcategoria.value : "");
 
       if (!idSubcat) {
-        alert("Selecciona una subcategoría");
+        await showWarning("Selecciona una subcategoría");
         return;
       }
 
       if (!valorSel) {
-        alert("Selecciona un valor");
+        await showWarning("Selecciona un valor");
         return;
       }
 
       const sub = catalogoSubcats.find((s) => String(campo(s, "id_subcat", "id")) === idSubcat);
 
       if (!sub) {
-        alert("Subcategoría no encontrada");
+        await showWarning("Subcategoría no encontrada");
         return;
       }
 
       if (subcategoriasTemporales.some((s) => String(s.id_subcat) === idSubcat)) {
-        alert("Esa subcategoría ya fue agregada");
+        await showWarning("Esa subcategoría ya fue agregada");
         return;
       }
 
