@@ -183,17 +183,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function cargarProductos() {
-    try {
-      productosCache = await getProductosAPI();
-      renderTablaDesdeLista(productosCache, true);
-    } catch (err) {
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar productos: ${escapeHtml(err.message)}</td></tr>`;
-      }
-    }
-  }
-
   function renderTablaDesdeLista(lista = [], esVistaGeneral = false) {
     if (!tbody) return;
 
@@ -206,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const cats = (p.categorias || []).map((c) => c.nombre).join(", ") || "—";
 
       return `
-        <tr data-id="${escapeHtml(p.id_producto)}">
+        <tr data-id="${escapeHtml(p.id_producto)}" data-folio="${escapeHtml(norm(p.folio))}">
           <td>${escapeHtml(norm(p.folio))}</td>
           <td>${escapeHtml(norm(p.descripcion) || "—")}</td>
           <td>$${escapeHtml(money(p.costo))}</td>
@@ -226,6 +215,32 @@ document.addEventListener("DOMContentLoaded", () => {
         </tr>
       `;
     }).join("");
+  }
+
+  async function recargarProductosCache() {
+    productosCache = await getProductosAPI();
+  }
+
+  async function actualizarVistaActual() {
+    const termino = norm(inputBuscar ? inputBuscar.value : "");
+
+    if (!termino) {
+      renderTablaDesdeLista(productosCache, true);
+      return;
+    }
+
+    await buscarProductoServidor(termino);
+  }
+
+  async function cargarProductos() {
+    try {
+      await recargarProductosCache();
+      await actualizarVistaActual();
+    } catch (err) {
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error al cargar productos: ${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
   }
 
   async function buscarProductoServidor(terminoManual = null) {
@@ -290,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalDetalleProducto").modal("show");
     } catch (err) {
-      alert(`Error al cargar el detalle: ${err.message}`);
+      alert(err.message || "Error al cargar el detalle");
     }
   }
 
@@ -333,35 +348,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $(modalRegistro).modal("show");
     } catch (err) {
-      alert(`Error al cargar el producto: ${err.message}`);
+      alert(err.message || "Error al cargar el producto");
     }
   }
 
   async function guardarProducto() {
-    const folio       = norm(inpCodigo.value);
-    const descripcion = norm(inpDescripcion.value);
-    const costo       = parseFloat(inpCosto ? inpCosto.value : "");
-    const precio      = parseFloat(inpPrecio.value);
-
-    if (!folio || !descripcion) {
-      alert("Completa el código y la descripción");
-      return;
-    }
-
-    if (isNaN(costo) || costo < 0) {
-      alert("El costo debe ser un número válido");
-      return;
-    }
-
-    if (isNaN(precio) || precio <= 0) {
-      alert("El precio debe ser un número mayor a cero");
-      return;
-    }
-
-    if (categoriasTemporales.length === 0) {
-      alert("Agrega al menos una categoría");
-      return;
-    }
+    const folio       = norm(inpCodigo ? inpCodigo.value : "");
+    const descripcion = norm(inpDescripcion ? inpDescripcion.value : "");
+    const costo       = inpCosto && inpCosto.value !== "" ? Number(inpCosto.value) : null;
+    const precio      = inpPrecio && inpPrecio.value !== "" ? Number(inpPrecio.value) : null;
 
     const payload = {
       descripcion,
@@ -376,17 +371,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      let res;
+
       if (modo === "create") {
-        await crearProductoAPI(payload);
+        res = await crearProductoAPI(payload);
       } else {
-        await editarProductoAPI(idEditando, payload);
+        res = await editarProductoAPI(idEditando, payload);
       }
 
       await cargarProductos();
       resetFormulario();
       $(modalRegistro).modal("hide");
+      alert(res?.message || "Producto guardado correctamente");
     } catch (err) {
-      alert(`Error al guardar: ${err.message}`);
+      alert(err.message || "Error al guardar");
     }
   }
 
@@ -394,17 +392,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!confirm(`¿Eliminar el producto ${folio}?`)) return;
 
     try {
-      await eliminarProductoAPI(idProducto);
+      const res = await eliminarProductoAPI(idProducto);
       await cargarProductos();
-
-      if (inputBuscar) {
-        const termino = norm(inputBuscar.value);
-        if (termino) {
-          await buscarProductoServidor(termino);
-        }
-      }
+      alert(res?.message || "Producto eliminado correctamente");
     } catch (err) {
-      alert(`Error al eliminar: ${err.message}`);
+      alert(err.message || "Error al eliminar");
     }
   }
 
@@ -543,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnAgregarCategoriaProducto) {
     btnAgregarCategoriaProducto.addEventListener("click", () => {
-      const idCat = norm(selectCategoriaProducto.value);
+      const idCat = norm(selectCategoriaProducto ? selectCategoriaProducto.value : "");
 
       if (!idCat) {
         alert("Selecciona una categoría");
@@ -678,6 +670,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!tr) return;
 
       const idProducto = tr.getAttribute("data-id");
+      const folio = tr.getAttribute("data-folio") || idProducto;
+
       if (!idProducto) return;
 
       if (e.target.closest(".btn-detalle")) {
@@ -691,8 +685,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (e.target.closest(".btn-eliminar")) {
-        const producto = productosCache.find((p) => String(p.id_producto) === String(idProducto));
-        const folio = producto ? producto.folio : idProducto;
         await eliminarProducto(idProducto, folio);
       }
     });
