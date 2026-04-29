@@ -98,12 +98,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const data = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      throw new Error(data?.message || "Error en la petición");
+        if (!response.ok) {
+      const mensaje = data?.message || data?.error || data?.msg || "Error en la petición";
+      throw new Error(mensaje);
     }
 
     if (data?.success === false) {
-      throw new Error(data.message || "Ocurrió un error");
+      const mensaje = data?.message || data?.error || data?.msg || "Ocurrió un error";
+      throw new Error(mensaje);
     }
 
     return data;
@@ -339,15 +341,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>
               <input
                 type="number"
-                min="1"
                 class="form-control form-control-sm detalle-cantidad"
-                value="${Number(item.cantidad_vendida) || 1}"
+                value="${Number(item.cantidad_vendida) || 0}"
               >
             </td>
             <td>
               <input
                 type="number"
-                min="0"
                 step="0.01"
                 class="form-control form-control-sm detalle-precio"
                 value="${precioBase}"
@@ -412,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (selectProducto) {
       const option = selectProducto.options[selectProducto.selectedIndex];
-      item.id_producto = Number(selectProducto.value);
+      item.id_producto = Number(selectProducto.value) || 0;
       item.nombre_producto = option?.text || "";
     }
 
@@ -680,22 +680,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     return detalleVentaTemporal.map((item) => {
       const cantidad = Number(item.cantidad_vendida || 0);
-      const idProducto = Number(item.id_producto);
+      const idProducto = Number(item.id_producto || 0);
 
       const candidatos = inventariosTrabajo
         .filter((inv) => Number(inv.id_producto) === idProducto)
         .sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0));
 
-      if (!candidatos.length) {
-        throw new Error(`No hay inventario registrado para ${item.nombre_producto}.`);
-      }
+        const elegido = candidatos[0] || null;
 
-      const elegido =
-        candidatos.find((inv) => Number(inv.stock || 0) >= cantidad) ||
-        candidatos[0];
-
-      if (!Number.isFinite(Number(elegido.id_almacen))) {
-        throw new Error(`No se pudo resolver el almacén para ${item.nombre_producto}.`);
+      if (!elegido) {
+        throw new Error(
+          `No hay inventario registrado para el producto "${item.nombre_producto}". Agrega stock al inventario primero.`
+        );
       }
 
       elegido.stock = Number(elegido.stock || 0) - cantidad;
@@ -879,23 +875,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const cantidad = Number(inpCantidadVenta.value);
       const precio = Number(inpPrecioVenta.value);
 
-      const nombreProducto =
-        selectProductoVenta.options[selectProductoVenta.selectedIndex]?.text || "";
-
-      if (!idProducto) {
+      if (!idProducto || idProducto === 0) {
         await showWarning("Selecciona un producto");
         return;
       }
 
-      if (isNaN(cantidad) || cantidad <= 0) {
-        await showWarning("Ingresa una cantidad válida");
+      if (!cantidad || cantidad <= 0) {
+        await showWarning("Ingresa una cantidad válida mayor a 0");
         return;
       }
 
-      if (isNaN(precio) || precio < 0) {
-        await showWarning("Ingresa un precio válido");
-        return;
-      }
+      const nombreProducto =
+        selectProductoVenta.options[selectProductoVenta.selectedIndex]?.text || "";
 
       const idxExistente = detalleVentaTemporal.findIndex(
         (item) => Number(item.id_producto) === Number(idProducto)
@@ -903,14 +894,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (idxExistente !== -1) {
         detalleVentaTemporal[idxExistente].cantidad_vendida =
-          Number(detalleVentaTemporal[idxExistente].cantidad_vendida) + cantidad;
-        detalleVentaTemporal[idxExistente].precio_venta = precio;
+          Number(detalleVentaTemporal[idxExistente].cantidad_vendida) + (Number.isFinite(cantidad) ? cantidad : 0);
+        detalleVentaTemporal[idxExistente].precio_venta =
+          Number.isFinite(precio) ? precio : 0;
       } else {
         detalleVentaTemporal.push({
-          id_producto: idProducto,
+          id_producto: Number.isFinite(idProducto) ? idProducto : 0,
           nombre_producto: nombreProducto,
-          cantidad_vendida: cantidad,
-          precio_venta: precio
+          cantidad_vendida: Number.isFinite(cantidad) ? cantidad : 0,
+          precio_venta: Number.isFinite(precio) ? precio : 0
         });
       }
 
@@ -935,7 +927,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDetalleTemporal();
     });
 
-    tbodyDetalleVenta.addEventListener("change", async (e) => {
+    tbodyDetalleVenta.addEventListener("change", (e) => {
       const tr = e.target.closest("tr");
       if (!tr) return;
 
@@ -948,20 +940,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const option = select.options[select.selectedIndex];
         const nuevoIdProducto = Number(select.value);
 
-        if (!nuevoIdProducto) return;
-
-        const existeRepetido = detalleVentaTemporal.some(
-          (prod, i) =>
-            i !== index && Number(prod.id_producto) === Number(nuevoIdProducto)
-        );
-
-        if (existeRepetido) {
-          await showWarning("Ese producto ya está agregado en la venta.");
-          select.value = item.id_producto;
-          return;
-        }
-
-        item.id_producto = nuevoIdProducto;
+        item.id_producto = Number.isFinite(nuevoIdProducto) ? nuevoIdProducto : 0;
         item.nombre_producto = option?.text || "";
         item.precio_venta = Number(option?.getAttribute("data-precio") || 0);
 
@@ -1011,18 +990,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnGuardar) {
     btnGuardar.addEventListener("click", async (e) => {
-      e.preventDefault();
+            e.preventDefault();
 
-      const folio = norm(inpFolio.value);
+      const folioTexto = norm(inpFolio.value);
 
-      if (!folio) {
-        await showWarning("Completa el folio");
+      if (!folioTexto) {
+        await showWarning("El folio es obligatorio");
         return;
       }
 
-      if (!detalleVentaTemporal.length) {
+      if (detalleVentaTemporal.length === 0) {
         await showWarning("Agrega al menos un producto a la venta");
         return;
+      }
+
+      for (const item of detalleVentaTemporal) {
+        if (!item.id_producto || item.id_producto === 0) {
+          await showWarning("Producto inválido en el detalle");
+          return;
+        }
+        if (!item.cantidad_vendida || item.cantidad_vendida <= 0) {
+          await showWarning(`Cantidad inválida para "${item.nombre_producto}"`);
+          return;
+        }
       }
 
       const textoOriginalBoton = btnGuardar.textContent;
@@ -1037,27 +1027,9 @@ document.addEventListener("DOMContentLoaded", () => {
         let res;
 
         if (modo === "create") {
-          if (
-            ventasCache.some(
-              (v) => norm(v.folio).toUpperCase() === payload.folio.toUpperCase()
-            )
-          ) {
-            throw new Error("Ese folio ya existe");
-          }
-
           res = await crearVentaAPI(payload);
           await showSuccess(res?.message || "Venta registrada correctamente");
         } else {
-          if (
-            ventasCache.some(
-              (v) =>
-                Number(v.id_venta) !== Number(idVentaEditando) &&
-                norm(v.folio).toUpperCase() === payload.folio.toUpperCase()
-            )
-          ) {
-            throw new Error("Ese folio ya existe");
-          }
-
           res = await actualizarVentaAPI(idVentaEditando, payload);
           await showSuccess(res?.message || "Venta actualizada correctamente");
         }
