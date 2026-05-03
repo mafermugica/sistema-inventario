@@ -38,12 +38,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function apiFetch(endpoint, options = {}) {
     const response = await fetch(`${API_URL}${endpoint}`, {
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      },
       ...options
     });
     const data = await response.json().catch(() => null);
-    if (!response.ok || data?.success === false) {
-      throw new Error(data?.message || "Error en la peticion");
+    if (!response.ok) {
+      const mensaje = data?.message || data?.error || data?.msg || "Error en la peticion";
+      throw new Error(mensaje);
+    }
+    if (data?.success === false) {
+      const mensaje = data?.message || data?.error || data?.msg || "Ocurrio un error";
+      throw new Error(mensaje);
     }
     return data;
   }
@@ -57,6 +65,98 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!idEstado) return [];
     const res = await apiFetch(`/api/estados_municipios/${idEstado}`);
     return Array.isArray(res.data) ? res.data : [];
+  }
+
+  async function cargarEstados(estadoSeleccionado = "") {
+    if (!selectEstado) return;
+    estadosCache = await getEstadosAPI();
+    selectEstado.innerHTML = `<option value="">Elegir estado...</option>`;
+    estadosCache.forEach((estado) => {
+      const option = document.createElement("option");
+      option.value = estado.id_estado;
+      option.textContent = estado.nombre;
+      if (String(estado.id_estado) === String(estadoSeleccionado)) {
+        option.selected = true;
+      }
+      selectEstado.appendChild(option);
+    });
+  }
+
+  async function cargarMunicipios(idEstado, municipioSeleccionado = "") {
+    if (!selectMunicipio) return;
+    selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
+    selectMunicipio.disabled = true;
+    municipiosCache = [];
+    if (!idEstado) return;
+    municipiosCache = await getMunicipiosPorEstadoAPI(idEstado);
+    municipiosCache.forEach((municipio) => {
+      const option = document.createElement("option");
+      option.value = municipio.id_municipio;
+      option.textContent = municipio.nombre;
+      if (String(municipio.id_municipio) === String(municipioSeleccionado)) {
+        option.selected = true;
+      }
+      selectMunicipio.appendChild(option);
+    });
+    selectMunicipio.disabled = false;
+  }
+
+  async function cargarCategorias() {
+    try {
+      const res = await apiFetch("/api/categorias/");
+      categoriasGlobal = Array.isArray(res.data) ? res.data : [];
+      selectNuevaCategoria.innerHTML = `<option value="">Elegir categoria...</option>`;
+      categoriasGlobal.forEach((c) => {
+        const option = document.createElement("option");
+        option.value = c.id_categoria;
+        option.textContent = c.nombre;
+        selectNuevaCategoria.appendChild(option);
+      });
+    } catch (error) {
+      console.error("Error cargando categorias:", error);
+    }
+  }
+
+  async function cargarClientes() {
+    try {
+      const res = await apiFetch("/api/clientes/");
+      clientesGlobal = Array.isArray(res.data) ? res.data : [];
+      renderTabla();
+    } catch (error) {
+      console.error("Error cargando clientes:", error);
+    }
+  }
+
+  function renderTabla(filtro = "") {
+    const f = (filtro || "").toLowerCase();
+    const lista = !f
+      ? clientesGlobal
+      : clientesGlobal.filter(c => {
+          const texto = `${c.folio} ${c.nombre} ${c.apellido_paterno} ${c.apellido_materno || ""} ${c.telefono} ${c.email}`.toLowerCase();
+          return texto.includes(f);
+        });
+    if (!tbody) return;
+    tbody.innerHTML = lista.map(c => `
+      <tr data-id="${c.id_cliente}">
+        <td>${c.folio || ""}</td>
+        <td>${c.nombre || ""}</td>
+        <td>${c.apellido_paterno || ""}</td>
+        <td>${c.apellido_materno || ""}</td>
+        <td>${c.telefono || ""}</td>
+        <td>${c.email || ""}</td>
+        <td>
+          <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button type="button" class="btn btn-danger btn-circle btn-sm btn-eliminar" title="Eliminar">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join("");
   }
 
   function actualizarResumenCategorias() {
@@ -94,96 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
     catClienteNombre.textContent = nombreCompleto || "Sin definir";
   }
 
-  function renderTabla(filtro = "") {
-    const f = (filtro || "").toLowerCase();
-    const lista = !f
-      ? clientesGlobal
-      : clientesGlobal.filter(c => {
-          const texto = `${c.folio} ${c.nombre} ${c.apellido_paterno} ${c.apellido_materno || ""} ${c.telefono} ${c.email}`.toLowerCase();
-          return texto.includes(f);
-        });
-    if (!tbody) return;
-    tbody.innerHTML = lista.map(c => `
-      <tr data-id="${c.id_cliente}">
-        <td>${c.folio || ""}</td>
-        <td>${c.nombre || ""}</td>
-        <td>${c.apellido_paterno || ""}</td>
-        <td>${c.apellido_materno || ""}</td>
-        <td>${c.telefono || ""}</td>
-        <td>${c.email || ""}</td>
-        <td>
-          <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar">
-            <i class="fas fa-pen"></i>
-          </button>
-          <button type="button" class="btn btn-danger btn-circle btn-sm btn-eliminar" title="Eliminar">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `).join("");
-  }
-
-  async function cargarClientes() {
-    try {
-      const res = await apiFetch("/api/clientes/");
-      clientesGlobal = res.data || res || [];
-      renderTabla();
-    } catch (error) {
-      console.error("Error cargando clientes:", error);
-    }
-  }
-
-  async function cargarEstados(estadoSeleccionado = "") {
-    estadosCache = await getEstadosAPI();
-    selectEstado.innerHTML = '<option value="">Elegir...</option>';
-    estadosCache.forEach(e => {
-      const option = document.createElement("option");
-      option.value = e.id_estado;
-      option.textContent = e.nombre;
-      if (String(e.id_estado) === String(estadoSeleccionado)) {
-        option.selected = true;
-      }
-      selectEstado.appendChild(option);
-    });
-  }
-
-  async function cargarMunicipios(idEstado, municipioSeleccionado = "") {
-    selectMunicipio.innerHTML = '<option value="">Elegir...</option>';
-    selectMunicipio.disabled = true;
-    municipiosCache = [];
-    if (!idEstado) return;
-    municipiosCache = await getMunicipiosPorEstadoAPI(idEstado);
-    municipiosCache.forEach(m => {
-      const option = document.createElement("option");
-      option.value = m.id_municipio;
-      option.textContent = m.nombre;
-      if (String(m.id_municipio) === String(municipioSeleccionado)) {
-        option.selected = true;
-      }
-      selectMunicipio.appendChild(option);
-    });
-    selectMunicipio.disabled = false;
-  }
-
-  async function cargarCategorias() {
-    try {
-      const res = await apiFetch("/api/categorias/");
-      categoriasGlobal = res.data || res || [];
-      selectNuevaCategoria.innerHTML = '<option value="">Elegir categoria...</option>';
-      categoriasGlobal.forEach(c => {
-        const option = document.createElement("option");
-        option.value = c.id_categoria;
-        option.textContent = c.nombre;
-        selectNuevaCategoria.appendChild(option);
-      });
-    } catch (error) {
-      console.error("Error cargando categorias:", error);
-    }
-  }
-
   async function obtenerDetalleCliente(id) {
     try {
       const res = await apiFetch(`/api/clientes/${id}`);
@@ -194,29 +204,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  inpTel.addEventListener("input", () => {
-    inpTel.value = inpTel.value.replace(/\D/g, "").slice(0, 10);
-  });
-
-  selectEstado.addEventListener("change", () => {
-    const idEstado = selectEstado.value;
-    if (idEstado) {
-      cargarMunicipios(idEstado);
-    } else {
-      selectMunicipio.innerHTML = '<option value="">Elegir...</option>';
-      selectMunicipio.disabled = true;
-    }
-  });
-
-  cargarClientes();
-  cargarEstados();
-  cargarCategorias();
-
   function resetFormulario() {
     form.reset();
     categoriasTemporales = [];
     inpFolio.disabled = false;
-    selectMunicipio.innerHTML = '<option value="">Elegir...</option>';
+    selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
     selectMunicipio.disabled = true;
     renderCategoriasTemporales();
     actualizarEncabezadoCategorias();
@@ -257,6 +249,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("detalleMunicipio").textContent = c.municipio_nombre || c.municipio || "";
     document.getElementById("detalleCategorias").textContent = (c.categorias || []).map(cat => cat.nombre || cat).join(", ");
     $("#modalDetalleCliente").modal("show");
+  }
+
+  inpTel.addEventListener("input", () => {
+    inpTel.value = inpTel.value.replace(/\D/g, "").slice(0, 10);
+  });
+
+  if (selectEstado) {
+    selectEstado.addEventListener("change", async () => {
+      const idEstado = selectEstado.value;
+      await cargarMunicipios(idEstado || "");
+    });
   }
 
   $(modalRegistro).on("show.bs.modal", function () {
@@ -454,4 +457,8 @@ document.addEventListener("DOMContentLoaded", () => {
       renderTabla(inputBuscar.value);
     });
   }
+
+  cargarClientes();
+  cargarEstados();
+  cargarCategorias();
 });
