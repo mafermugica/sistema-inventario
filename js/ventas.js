@@ -39,6 +39,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const norm = (v) => (v ?? "").toString().trim();
 
+  function formatearFecha(fechaRaw) {
+    if (!fechaRaw) return "";
+    let fechaObj;
+    if (/^\d{2}-\d{2}-\d{4}/.test(fechaRaw)) {
+      const [fechaParte, horaParte = "00:00:00"] = fechaRaw.split(" ");
+      const [dd, mm, yyyy] = fechaParte.split("-");
+      const [hh = "00", mi = "00"] = horaParte.split(":");
+      fechaObj = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00`);
+    } else {
+      fechaObj = new Date(fechaRaw);
+    }
+    if (isNaN(fechaObj.getTime())) return fechaRaw;
+    const yyyy = fechaObj.getFullYear();
+    const mm = String(fechaObj.getMonth() + 1).padStart(2, "0");
+    const dd = String(fechaObj.getDate()).padStart(2, "0");
+    const hh = String(fechaObj.getHours()).padStart(2, "0");
+    const mi = String(fechaObj.getMinutes()).padStart(2, "0");
+    return `${dd}-${mm}-${yyyy} ${hh}:${mi}`;
+  }
+
   function money(valor) {
     return Number(valor || 0).toFixed(2);
   }
@@ -177,6 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return {
       id_venta: Number(v.id_venta),
       folio: v.folio || "",
+      fecha_creacion: v.fecha_creacion || v.fecha || "",
       precio_venta_final: Number(v.precio_venta_final || 0),
       id_estado: v.id_estado ? Number(v.id_estado) : null,
       id_municipio: v.id_municipio ? Number(v.id_municipio) : null,
@@ -404,10 +425,18 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       }
 
+      const almacen = almacenesCache.find(
+        (a) => Number(a.id_almacen) === Number(item.id_almacen)
+      );
+      const nombreAlmacen = item.nombre_almacen ||
+        (almacen
+          ? (almacen.nombre || almacen.nombre_almacen || `Almacén ${almacen.id_almacen}`)
+          : "—");
+
       return `
         <tr data-index="${index}">
           <td>${item.nombre_producto}</td>
-          <td>${item.nombre_almacen || "—"}</td>
+          <td>${nombreAlmacen}</td>
           <td>${item.cantidad_vendida}</td>
           <td>$${money(precioBase)}</td>
           <td>$${money(precioConIVA)}</td>
@@ -487,6 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : ventasCache.filter((v) => {
           const texto = `
             ${v.folio}
+            ${formatearFecha(v.fecha_creacion)}
             ${v.precio_venta_final}
             ${v.estado || ""}
             ${v.municipio || ""}
@@ -498,7 +528,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!lista.length) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="5" class="text-center text-muted">No hay ventas registradas.</td>
+          <td colspan="6" class="text-center text-muted">No hay ventas registradas.</td>
         </tr>
       `;
       return;
@@ -507,6 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tbody.innerHTML = lista.map((v) => `
       <tr data-id="${v.id_venta}">
         <td>${v.folio}</td>
+        <td>${formatearFecha(v.fecha_creacion)}</td>
         <td>$${money(v.precio_venta_final)}</td>
         <td>${v.estado || ""}</td>
         <td>${v.municipio || ""}</td>
@@ -797,7 +828,6 @@ document.addEventListener("DOMContentLoaded", () => {
               <thead class="thead-light">
                 <tr>
                   <th>Producto</th>
-                  <th>Almacén</th>
                   <th>Cantidad</th>
                   <th>Precio</th>
                   <th>Precio con IVA</th>
@@ -810,17 +840,9 @@ document.addEventListener("DOMContentLoaded", () => {
                   const precioConIVA = calcularPrecioConIVA(precioBase);
                   const importe = Number(d.cantidad_vendida) * precioConIVA;
 
-                  const almacen = almacenesCache.find(
-                    (a) => Number(a.id_almacen) === Number(d.id_almacen)
-                  );
-                  const nombreAlmacen = almacen
-                    ? (almacen.nombre || almacen.nombre_almacen || `Almacén ${almacen.id_almacen}`)
-                    : (d.nombre_almacen || "—");
-
                   return `
                     <tr>
                       <td>${d.nombre_producto}</td>
-                      <td>${nombreAlmacen}</td>
                       <td>${d.cantidad_vendida}</td>
                       <td>$${money(precioBase)}</td>
                       <td>$${money(precioConIVA)}</td>

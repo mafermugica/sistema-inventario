@@ -199,9 +199,12 @@
 
                         <div class="form-group">
                             <label>Categorías asociadas</label>
-                            <select id="selectCategoriasSub" class="form-control" multiple size="3">
-                            </select>
-                            <small class="form-text text-muted">Mantén presionado Ctrl para seleccionar varias categorías.</small>
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-success btn-sm" id="btnAbrirCategoriasSub">
+                                    Administrar categorías
+                                </button>
+                                <span class="ml-3 text-muted" id="resumenCategoriasSub">0 categorías registradas</span>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -214,28 +217,75 @@
     </div>
 
     <div class="modal fade" id="modalDetalleSubcategoria" tabindex="-1" role="dialog" aria-labelledby="tituloDetalleSub" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 280px;" role="document">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header bg-info text-white py-2">
-                    <h6 class="modal-title" id="tituloDetalleSub">Detalle de la Subcategoría</h6>
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="tituloDetalleSub">Detalle de la Subcategoría</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
                 </div>
-                <div class="modal-body py-2" style="font-size: 0.85rem;">
-                    <p class="mb-1"><strong>ID:</strong> <span id="detalleIdSub"></span></p>
-                    <p class="mb-1"><strong>Nombre:</strong> <span id="detalleNombreSub"></span></p>
-                    <p class="mb-1"><strong>Descripción:</strong> <span id="detalleDescripcionSub"></span></p>
-                    <p class="mb-1"><strong>Valor numérico:</strong> <span id="detalleValorSub"></span></p>
-                    <p class="mb-1"><strong>Unidad:</strong> <span id="detalleUnidadSub"></span></p>
-                    <p class="mb-1"><strong>Categorías:</strong></p>
-                    <select id="detalleCategoriasSub" class="form-control form-control-sm" size="3" disabled style="font-size: 0.85rem;">
-                    </select>
+                <div class="modal-body">
+                    <p><strong>ID:</strong> <span id="detalleIdSub"></span></p>
+                    <p><strong>Nombre:</strong> <span id="detalleNombreSub"></span></p>
+                    <p><strong>Descripción:</strong> <span id="detalleDescripcionSub"></span></p>
+                    <p><strong>Valor numérico:</strong> <span id="detalleValorSub"></span></p>
+                    <p><strong>Unidad:</strong> <span id="detalleUnidadSub"></span></p>
+                    <p><strong>Categorías:</strong> <span id="detalleCategoriasSub"></span></p>
                 </div>
-                <div class="modal-footer py-1">
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <div id="modalCategoriasSub" class="ventana-secundaria-overlay" style="display: none;">
+        <div class="ventana-secundaria-contenido">
+            <div class="ventana-secundaria-header bg-success text-white d-flex justify-content-between align-items-center px-3 py-2">
+                <h5 class="mb-0">Categorías asociadas</h5>
+                <button type="button" class="close text-white" id="btnCerrarCategoriasSubX" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="p-3">
+                <div class="input-group mb-3">
+                    <select id="selectNuevaCategoriaSub" class="form-control">
+                        <option value="" selected>Elegir categoría...</option>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-success" id="btnAgregarCategoriaSub">
+                            Agregar categoría
+                        </button>
+                    </div>
+                </div>
+                <div id="listaCategoriasSub"></div>
+            </div>
+            <div class="px-3 pb-3 text-right">
+                <button type="button" class="btn btn-secondary" id="btnCerrarCategoriasSub">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .ventana-secundaria-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .ventana-secundaria-contenido {
+            width: 100%;
+            max-width: 620px;
+            background: #fff;
+            border-radius: 0.35rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+    </style>
 
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>

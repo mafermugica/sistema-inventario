@@ -238,7 +238,7 @@ function renderizarProductos(lista) {
     lista.forEach((producto) => {
         tbody.innerHTML += `
             <tr>
-                <td>${producto.folio || ""}</td>
+                <td>${producto.clave || producto.folio || ""}</td>
                 <td>${producto.descripcion || ""}</td>
                 <td>${formatoMoneda(producto.costo || 0)}</td>
                 <td>${formatoMoneda(producto.precio || 0)}</td>
@@ -272,7 +272,7 @@ function filtrarProductos() {
 
     const filtrados = productos.filter((producto) => {
         return (
-            String(producto.folio || "").toLowerCase().includes(texto) ||
+            String(producto.clave || producto.folio || "").toLowerCase().includes(texto) ||
             String(producto.descripcion || "").toLowerCase().includes(texto) ||
             obtenerCategoriasTexto(producto).toLowerCase().includes(texto)
         );
@@ -297,7 +297,7 @@ async function guardarProducto() {
     };
 
     if (modo === "create") {
-        payload.folio = folio;
+        payload.clave = folio;
     }
 
     try {
@@ -341,7 +341,7 @@ async function abrirEditarProducto(idProducto) {
         modo = "edit";
         idProductoEditando = idProducto;
 
-        setValue("codigoProd", producto.folio || "");
+        setValue("codigoProd", producto.clave || producto.folio || "");
         setValue("descripcionProd", producto.descripcion || "");
         setValue("costoProd", producto.costo || "");
         setValue("precioProd", producto.precio || "");
@@ -403,7 +403,7 @@ async function verDetalleProducto(idProducto) {
         const result = await fetchBackend(`/api/productos/${idProducto}`);
         const producto = result.data;
 
-        setText("detalleCodigo", producto.folio || "");
+        setText("detalleCodigo", producto.clave || producto.folio || "");
         setText("detalleDescripcion", producto.descripcion || "");
         setText("detalleCosto", formatoMoneda(producto.costo || 0));
         setText("detallePrecio", formatoMoneda(producto.precio || 0));

@@ -13,6 +13,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const tituloModal = document.getElementById("tituloModal");
   const modalRegistro = "#modalNuevaSubcategoria";
 
+  const btnAbrirCategoriasSub = document.getElementById("btnAbrirCategoriasSub");
+  const btnAgregarCategoriaSub = document.getElementById("btnAgregarCategoriaSub");
+  const btnCerrarCategoriasSub = document.getElementById("btnCerrarCategoriasSub");
+  const btnCerrarCategoriasSubX = document.getElementById("btnCerrarCategoriasSubX");
+
+  const selectNuevaCategoriaSub = document.getElementById("selectNuevaCategoriaSub");
+  const listaCategoriasSub = document.getElementById("listaCategoriasSub");
+  const resumenCategoriasSub = document.getElementById("resumenCategoriasSub");
+
+  const modalCategoriasSub = document.getElementById("modalCategoriasSub");
+
+  let categoriasTemporales = [];
+
   let modo = "create";
   let idEditando = null;
   let subcategoriasCache = [];
@@ -178,9 +191,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (form) form.reset();
     modo = "create";
     idEditando = null;
+    categoriasTemporales = [];
     tituloModal.textContent = "Nueva Subcategoría";
     btnGuardar.textContent = "Guardar Subcategoría";
-    cargarSelectCategorias();
   }
 
   async function abrirDetalle(subcategoria) {
@@ -200,19 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (detalleDescripcionSub) detalleDescripcionSub.textContent = data.descripcion || "—";
       if (detalleValorSub) detalleValorSub.textContent = data.valor_numerico != null ? data.valor_numerico : "—";
       if (detalleUnidadSub) detalleUnidadSub.textContent = data.unidad || "—";
-
-      if (detalleCategoriasSub) {
-        detalleCategoriasSub.innerHTML = "";
-        categoriasCache.forEach((cat) => {
-          const option = document.createElement("option");
-          option.value = cat.id_cat ?? cat.id ?? "";
-          option.textContent = resolverNombreCategoria(cat);
-          if (categoriasIds.some((sel) => String(sel) === String(option.value))) {
-            option.selected = true;
-          }
-          detalleCategoriasSub.appendChild(option);
-        });
-      }
+      if (detalleCategoriasSub) detalleCategoriasSub.textContent = getNombresCategorias(categoriasIds);
 
       $("#modalDetalleSubcategoria").modal("show");
     } catch (error) {
@@ -230,8 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inpUnidad.value = subcategoria.unidad || "";
 
     const categoriasIds = resolverCategoriasIds(subcategoria);
-
-    cargarSelectCategorias(categoriasIds);
+    categoriasTemporales = [...categoriasIds.map(id => String(id))];
 
     tituloModal.textContent = "Editar Subcategoría";
     btnGuardar.textContent = "Guardar Cambios";
@@ -242,6 +242,56 @@ document.addEventListener("DOMContentLoaded", () => {
     return Array.from(selectCategorias.selectedOptions)
       .map((opt) => Number(opt.value))
       .filter((v) => v > 0);
+  }
+
+  function actualizarResumenCategoriasSub() {
+    const total = categoriasTemporales.length;
+    if (resumenCategoriasSub) {
+      resumenCategoriasSub.textContent = `${total} ${total === 1 ? "categoría registrada" : "categorías registradas"}`;
+    }
+  }
+
+  function renderCategoriasTemporales() {
+    if (!listaCategoriasSub) return;
+
+    if (categoriasTemporales.length === 0) {
+      listaCategoriasSub.innerHTML = `<div class="text-muted small">No hay categorías agregadas.</div>`;
+      actualizarResumenCategoriasSub();
+      return;
+    }
+
+    listaCategoriasSub.innerHTML = `
+      <ul class="list-group">
+        ${categoriasTemporales.map(catId => {
+          const cat = categoriasCache.find(c => String(c.id_cat ?? c.id) === String(catId));
+          const nombre = cat ? resolverNombreCategoria(cat) : catId;
+          return `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              ${nombre}
+              <button type="button" class="btn btn-danger btn-sm btn-quitar-categoria-sub" data-categoria="${catId}">
+                Quitar
+              </button>
+            </li>
+          `;
+        }).join("")}
+      </ul>
+    `;
+
+    actualizarResumenCategoriasSub();
+  }
+
+  function cargarSelectNuevaCategoriaSub() {
+    if (!selectNuevaCategoriaSub) return;
+    selectNuevaCategoriaSub.innerHTML = `<option value="" selected>Elegir categoría...</option>`;
+    categoriasCache.forEach(cat => {
+      const option = document.createElement("option");
+      option.value = cat.id_cat ?? cat.id ?? "";
+      option.textContent = resolverNombreCategoria(cat);
+      if (categoriasTemporales.includes(option.value)) {
+        option.disabled = true;
+      }
+      selectNuevaCategoriaSub.appendChild(option);
+    });
   }
 
   async function refrescarSubcategorias() {
@@ -258,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
         descripcion: norm(inpDescripcion.value),
         valor_numerico: inpValor.value ? Number(inpValor.value) : null,
         unidad: norm(inpUnidad.value),
-        categorias_ids: obtenerCategoriasSeleccionadas()
+        categorias_ids: categoriasTemporales.map(id => Number(id))
       };
 
       try {
@@ -320,6 +370,61 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   $(modalRegistro).on("hidden.bs.modal", () => resetFormulario());
+
+  if (btnAbrirCategoriasSub) {
+    btnAbrirCategoriasSub.addEventListener("click", () => {
+      cargarSelectNuevaCategoriaSub();
+      renderCategoriasTemporales();
+      if (modalCategoriasSub) {
+        modalCategoriasSub.style.display = "flex";
+      }
+    });
+  }
+
+  function cerrarVentanaCategoriasSub() {
+    if (modalCategoriasSub) {
+      modalCategoriasSub.style.display = "none";
+    }
+  }
+
+  if (btnCerrarCategoriasSub) {
+    btnCerrarCategoriasSub.addEventListener("click", cerrarVentanaCategoriasSub);
+  }
+  if (btnCerrarCategoriasSubX) {
+    btnCerrarCategoriasSubX.addEventListener("click", cerrarVentanaCategoriasSub);
+  }
+
+  if (btnAgregarCategoriaSub) {
+    btnAgregarCategoriaSub.addEventListener("click", () => {
+      const nuevaCategoria = norm(selectNuevaCategoriaSub.value);
+
+      if (!nuevaCategoria) {
+        alert("Selecciona una categoría");
+        return;
+      }
+
+      if (categoriasTemporales.includes(nuevaCategoria)) {
+        alert("Esa categoría ya fue agregada");
+        return;
+      }
+
+      categoriasTemporales.push(nuevaCategoria);
+      cargarSelectNuevaCategoriaSub();
+      renderCategoriasTemporales();
+    });
+  }
+
+  if (listaCategoriasSub) {
+    listaCategoriasSub.addEventListener("click", (e) => {
+      const btnQuitar = e.target.closest(".btn-quitar-categoria-sub");
+      if (!btnQuitar) return;
+
+      const categoria = btnQuitar.getAttribute("data-categoria");
+      categoriasTemporales = categoriasTemporales.filter(cat => cat !== categoria);
+      cargarSelectNuevaCategoriaSub();
+      renderCategoriasTemporales();
+    });
+  }
 
   (async function init() {
     try {
