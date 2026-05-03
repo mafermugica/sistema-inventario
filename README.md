@@ -1,20 +1,93 @@
-# 🚀 Core AGM - ERP Agromundo
+# 🌱 Sistema de Inventario Agromundo
 
-**Core AGM** es un sistema ERP integral desarrollado para automatizar y centralizar la gestión operativa de Agromundo. El sistema permite un control preciso de inventarios, administración de almacenes y procesamiento de ventas, facilitando la toma de decisiones mediante reportes analíticos.
+Sistema ERP integral para la gestión de inventario, ventas y reportes analíticos de Agromundo.
 
-## 🎯 Objetivo
-Digitalizar los procesos de inventario y ventas de Agromundo, eliminando tareas manuales, reduciendo errores de stock y optimizando el flujo de información entre el almacén y el área comercial.
+## 📋 Descripción
 
-## 🛠️ Tecnologías Utilizadas
-* **Interfaz & UI:** HTML5, CSS3, Bootstrap y el template profesional **SB Admin 2**.
-* **Lógica de Frontend:** JavaScript con arquitectura modular.
-* **Visualización de Datos:** **Chart.js** para reportes dinámicos e interactivos.
-* **Exportación de Datos:** **SheetJS (XLSX)** para la generación de reportes en Excel.
-* **Comunicación:** Consumo de **API REST** para integración con el backend y persistencia en base de datos relacional.
+Sistema web desarrollado para automatizar y centralizar la gestión operativa de Agromundo, permitiendo control preciso de inventarios, administración de almacenes y procesamiento de ventas, con capacidades de análisis mediante reportes interactivos.
 
-## ✨ Funcionalidades Principales
-* **Gestión de Catálogo:** Registro detallado de productos con categorías y subcategorías.
-* **Control de Stock:** Validación automática de existencias antes de confirmar ventas.
-* **Automatización:** Descuento automático del inventario tras cada venta registrada.
-* **Análisis Visual:** Gráficas de ventas por producto, categoría y clientes más frecuentes.
-* **Auditoría:** Historial completo de movimientos de entrada y salida por almacén.
+## 🚀 Características Principales
+
+### Gestión de Productos
+- Catálogo completo con códigos (clave/folio), descripción, precios y costos
+- Categorización mediante categorías y subcategorías
+- Búsqueda y filtrado en tiempo real
+
+### Ventas
+- Registro de ventas con múltiples productos
+- Validación automática de existencias
+- Descuento automático de inventario post-venta
+- Historial detallado con fechas formateadas
+
+### Inventario y Almacén
+- Control de stock por almacén
+- Movimientos de entrada y salida
+- Trazabilidad completa de inventario
+
+### Reportes y Análisis
+- Dashboard interactivo con resumen de ventas
+- Gráficas dinámicas (Chart.js):
+  - Ventas por producto (barras)
+  - Ventas por línea/categoría (dona)
+  - Ventas por cliente (barras)
+  - Productos más vendidos por categoría
+- Ranking de productos y tablas detalladas
+- Exportación de reportes a Excel (XLSX)
+- Gráficas colapsables para mejor navegación
+
+### Interfaz de Usuario
+- Diseño responsive con SB Admin 2
+- Modales estandarizados en todos los módulos
+- Selección de categorías mediante ventanas secundarias
+- Menú de usuario con gestión de usuarios y cierre de sesión
+
+## 🛠️ Tecnologías
+
+- **Frontend:** HTML5, CSS3, JavaScript (ES6+)
+- **UI Framework:** Bootstrap 4, SB Admin 2
+- **Gráficas:** Chart.js
+- **Exportación:** SheetJS (XLSX)
+- **Backend API:** REST API en http://143.198.230.63
+
+## 📁 Estructura del Proyecto
+
+```
+├── index.html              # Dashboard principal
+├── productos.html          # Gestión de productos
+├── clientes.html           # Gestión de clientes
+├── ventas.html             # Registro de ventas
+├── inventario.html         # Control de inventario
+├── movimientos.html        # Historial de movimientos
+├── almacen.html            # Gestión de almacenes
+├── categorias.html         # Catálogo de categorías
+├── subcategorias.html      # Catálogo de subcategorías
+├── reportes.html          # Reportes y análisis
+├── usuarios.html           # Gestión de usuarios
+├── js/
+│   ├── productos.js
+│   ├── clientes.js
+│   ├── ventas.js
+│   ├── inventario.js
+│   ├── movimientos.js
+│   ├── almacen.js
+│   ├── categorias.js
+│   ├── subcategorias.js
+│   └── reportes.js
+├── css/
+├── img/
+└── vendor/
+```
+
+## 🔧 Configuración
+
+1. Clonar el repositorio
+2. Abrir cualquier archivo `.html` en el navegador
+3. El sistema se conecta automáticamente a la API en `http://143.198.230.63`
+
+### Requisitos
+- Navegador web moderno
+- Conexión a internet 
+
+## 👥 Créditos
+
+Desarrollado para **Agromundo** - 2026
