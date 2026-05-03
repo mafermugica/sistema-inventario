@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectMunicipio = document.getElementById("selectMunicipioVenta");
 
   const selectProductoVenta = document.getElementById("selectProductoVenta");
+  const selectAlmacenVenta = document.getElementById("selectAlmacenVenta");
   const inpCantidadVenta = document.getElementById("cantidadVenta");
   const inpPrecioVenta = document.getElementById("precioVenta");
   const totalVenta = document.getElementById("totalVenta");
@@ -195,7 +196,9 @@ document.addEventListener("DOMContentLoaded", () => {
         det.folio_producto ||
         `Producto ${det.id_producto}`,
       cantidad_vendida: Number(det.cantidad_vendida || 0),
-      precio_venta: Number(det.precio_venta || 0)
+      precio_venta: Number(det.precio_venta || 0),
+      id_almacen: Number(det.id_almacen) || null,
+      nombre_almacen: det.nombre_almacen ?? null
     };
   }
 
@@ -287,6 +290,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function cargarAlmacenes(almacenSeleccionado = "") {
+    if (!selectAlmacenVenta) return;
+
+    selectAlmacenVenta.innerHTML = `<option value="">Elegir almacén...</option>`;
+
+    almacenesCache.forEach((a) => {
+      const option = document.createElement("option");
+      option.value = a.id_almacen;
+      option.textContent = a.nombre || a.nombre_almacen || `Almacén ${a.id_almacen}`;
+
+      if (String(a.id_almacen) === String(almacenSeleccionado)) {
+        option.selected = true;
+      }
+
+      selectAlmacenVenta.appendChild(option);
+    });
+  }
+
   function getOpcionesProductosHTML(idSeleccionado = "") {
     return `
       <option value="">Elegir producto...</option>
@@ -297,6 +318,20 @@ document.addEventListener("DOMContentLoaded", () => {
           ${String(p.id_producto) === String(idSeleccionado) ? "selected" : ""}
         >
           ${p.descripcion || p.descripcion_producto || p.nombre_producto || `Producto ${p.id_producto}`}
+        </option>
+      `).join("")}
+    `;
+  }
+
+  function getOpcionesAlmacenesHTML(idSeleccionado = "") {
+    return `
+      <option value="">Elegir almacén...</option>
+      ${almacenesCache.map((a) => `
+        <option
+          value="${a.id_almacen}"
+          ${String(a.id_almacen) === String(idSeleccionado) ? "selected" : ""}
+        >
+          ${a.nombre || a.nombre_almacen || `Almacén ${a.id_almacen}`}
         </option>
       `).join("")}
     `;
@@ -318,7 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (detalleVentaTemporal.length === 0) {
       tbodyDetalleVenta.innerHTML = `
         <tr>
-          <td colspan="6" class="text-muted">No hay productos agregados.</td>
+          <td colspan="7" class="text-muted">No hay productos agregados.</td>
         </tr>
       `;
       calcularTotalTemporal();
@@ -336,6 +371,11 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>
               <select class="form-control form-control-sm detalle-producto">
                 ${getOpcionesProductosHTML(item.id_producto)}
+              </select>
+            </td>
+            <td>
+              <select class="form-control form-control-sm detalle-almacen">
+                ${getOpcionesAlmacenesHTML(item.id_almacen)}
               </select>
             </td>
             <td>
@@ -367,6 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <tr data-index="${index}">
           <td>${item.nombre_producto}</td>
+          <td>${item.nombre_almacen || "—"}</td>
           <td>${item.cantidad_vendida}</td>
           <td>$${money(precioBase)}</td>
           <td>$${money(precioConIVA)}</td>
@@ -407,6 +448,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!item) return;
 
     const selectProducto = tr.querySelector(".detalle-producto");
+    const selectAlmacen = tr.querySelector(".detalle-almacen");
     const inputCantidad = tr.querySelector(".detalle-cantidad");
     const inputPrecio = tr.querySelector(".detalle-precio");
 
@@ -414,6 +456,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const option = selectProducto.options[selectProducto.selectedIndex];
       item.id_producto = Number(selectProducto.value) || 0;
       item.nombre_producto = option?.text || "";
+    }
+
+    if (selectAlmacen) {
+      item.id_almacen = Number(selectAlmacen.value) || null;
+      const almacen = almacenesCache.find(
+        (a) => Number(a.id_almacen) === item.id_almacen
+      );
+      item.nombre_almacen = almacen
+        ? (almacen.nombre || almacen.nombre_almacen || `Almacén ${almacen.id_almacen}`)
+        : null;
     }
 
     if (inputCantidad) {
@@ -499,6 +551,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectProductoVenta) {
       cargarProductos();
       selectProductoVenta.value = "";
+    }
+
+    if (selectAlmacenVenta) {
+      cargarAlmacenes();
+      selectAlmacenVenta.value = "";
     }
 
     if (inpCantidadVenta) inpCantidadVenta.value = "";
@@ -673,34 +730,22 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function construirPayloadDetalle() {
-    const inventariosTrabajo = inventariosCache.map((inv) => ({
-      ...inv,
-      stock: Number(inv.stock || 0)
-    }));
-
     return detalleVentaTemporal.map((item) => {
       const cantidad = Number(item.cantidad_vendida || 0);
       const idProducto = Number(item.id_producto || 0);
+      const idAlmacen = Number(item.id_almacen) || null;
 
-      const candidatos = inventariosTrabajo
-        .filter((inv) => Number(inv.id_producto) === idProducto)
-        .sort((a, b) => Number(b.stock || 0) - Number(a.stock || 0));
-
-        const elegido = candidatos[0] || null;
-
-      if (!elegido) {
+      if (!idAlmacen) {
         throw new Error(
-          `No hay inventario registrado para el producto "${item.nombre_producto}". Agrega stock al inventario primero.`
+          `Selecciona un almacén para el producto "${item.nombre_producto}".`
         );
       }
-
-      elegido.stock = Number(elegido.stock || 0) - cantidad;
 
       return {
         id_producto: idProducto,
         cantidad_vendida: cantidad,
         precio_venta: Number(item.precio_venta || 0),
-        id_almacen: Number(elegido.id_almacen)
+        id_almacen: idAlmacen
       };
     });
   }
@@ -752,6 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <thead class="thead-light">
                 <tr>
                   <th>Producto</th>
+                  <th>Almacén</th>
                   <th>Cantidad</th>
                   <th>Precio</th>
                   <th>Precio con IVA</th>
@@ -764,9 +810,17 @@ document.addEventListener("DOMContentLoaded", () => {
                   const precioConIVA = calcularPrecioConIVA(precioBase);
                   const importe = Number(d.cantidad_vendida) * precioConIVA;
 
+                  const almacen = almacenesCache.find(
+                    (a) => Number(a.id_almacen) === Number(d.id_almacen)
+                  );
+                  const nombreAlmacen = almacen
+                    ? (almacen.nombre || almacen.nombre_almacen || `Almacén ${almacen.id_almacen}`)
+                    : (d.nombre_almacen || "—");
+
                   return `
                     <tr>
                       <td>${d.nombre_producto}</td>
+                      <td>${nombreAlmacen}</td>
                       <td>${d.cantidad_vendida}</td>
                       <td>$${money(precioBase)}</td>
                       <td>$${money(precioConIVA)}</td>
@@ -831,12 +885,21 @@ document.addEventListener("DOMContentLoaded", () => {
         await cargarMunicipios("");
       }
 
-      detalleVentaTemporal = detalles.map((d) => ({
-        id_producto: Number(d.id_producto),
-        nombre_producto: d.nombre_producto,
-        cantidad_vendida: Number(d.cantidad_vendida),
-        precio_venta: Number(d.precio_venta)
-      }));
+      detalleVentaTemporal = detalles.map((d) => {
+        const almacen = almacenesCache.find(
+          (a) => Number(a.id_almacen) === Number(d.id_almacen)
+        );
+        return {
+          id_producto: Number(d.id_producto),
+          nombre_producto: d.nombre_producto,
+          id_almacen: Number(d.id_almacen) || null,
+          nombre_almacen: almacen
+            ? (almacen.nombre || almacen.nombre_almacen || `Almacén ${almacen.id_almacen}`)
+            : (d.nombre_almacen || null),
+          cantidad_vendida: Number(d.cantidad_vendida),
+          precio_venta: Number(d.precio_venta)
+        };
+      });
 
       renderDetalleTemporal();
 
@@ -872,11 +935,17 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
 
       const idProducto = Number(selectProductoVenta.value);
+      const idAlmacen = Number(selectAlmacenVenta.value);
       const cantidad = Number(inpCantidadVenta.value);
       const precio = Number(inpPrecioVenta.value);
 
       if (!idProducto || idProducto === 0) {
         await showWarning("Selecciona un producto");
+        return;
+      }
+
+      if (!idAlmacen || idAlmacen === 0) {
+        await showWarning("Selecciona un almacén");
         return;
       }
 
@@ -888,8 +957,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const nombreProducto =
         selectProductoVenta.options[selectProductoVenta.selectedIndex]?.text || "";
 
+      const nombreAlmacen =
+        selectAlmacenVenta.options[selectAlmacenVenta.selectedIndex]?.text || "";
+
       const idxExistente = detalleVentaTemporal.findIndex(
-        (item) => Number(item.id_producto) === Number(idProducto)
+        (item) => Number(item.id_producto) === Number(idProducto) && Number(item.id_almacen) === Number(idAlmacen)
       );
 
       if (idxExistente !== -1) {
@@ -901,6 +973,8 @@ document.addEventListener("DOMContentLoaded", () => {
         detalleVentaTemporal.push({
           id_producto: Number.isFinite(idProducto) ? idProducto : 0,
           nombre_producto: nombreProducto,
+          id_almacen: Number.isFinite(idAlmacen) ? idAlmacen : 0,
+          nombre_almacen: nombreAlmacen,
           cantidad_vendida: Number.isFinite(cantidad) ? cantidad : 0,
           precio_venta: Number.isFinite(precio) ? precio : 0
         });
@@ -909,6 +983,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDetalleTemporal();
 
       selectProductoVenta.value = "";
+      selectAlmacenVenta.value = "";
       inpCantidadVenta.value = "";
       inpPrecioVenta.value = "";
     });
@@ -951,6 +1026,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         actualizarDetalleDesdeFila(tr);
       }
+
+      if (e.target.classList.contains("detalle-almacen")) {
+        const index = Number(tr.getAttribute("data-index"));
+        const item = detalleVentaTemporal[index];
+        if (!item) return;
+
+        const select = e.target;
+        item.id_almacen = Number(select.value) || null;
+
+        const almacen = almacenesCache.find(
+          (a) => Number(a.id_almacen) === item.id_almacen
+        );
+        item.nombre_almacen = almacen
+          ? (almacen.nombre || almacen.nombre_almacen || `Almacén ${almacen.id_almacen}`)
+          : null;
+
+        actualizarDetalleDesdeFila(tr);
+      }
     });
 
     tbodyDetalleVenta.addEventListener("input", (e) => {
@@ -970,6 +1063,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await refrescarCatalogos();
       cargarProductos();
+      cargarAlmacenes();
 
       if (modo !== "edit") {
         await cargarEstados();
@@ -1095,6 +1189,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await Promise.all([refrescarCatalogos(), refrescarVentas()]);
       cargarProductos();
+      cargarAlmacenes();
       await cargarEstados();
       renderTabla();
       resetFormulario();

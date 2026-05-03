@@ -28,11 +28,21 @@ document.addEventListener("DOMContentLoaded", () => {
     return tipo ? "Entrada" : "Salida";
   }
 
-  function formatearFecha(fechaConT) {
-    if (!fechaConT) return "";
+  function formatearFecha(fechaRaw) {
+    if (!fechaRaw) return "";
 
-    const fechaObj = new Date(fechaConT);
-    if (isNaN(fechaObj.getTime())) return fechaConT;
+    let fechaObj;
+
+    if (/^\d{2}-\d{2}-\d{4}/.test(fechaRaw)) {
+      const [fechaParte, horaParte = "00:00:00"] = fechaRaw.split(" ");
+      const [dd, mm, yyyy] = fechaParte.split("-");
+      const [hh = "00", mi = "00"] = horaParte.split(":");
+      fechaObj = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00`);
+    } else {
+      fechaObj = new Date(fechaRaw);
+    }
+
+    if (isNaN(fechaObj.getTime())) return fechaRaw;
 
     const yyyy = fechaObj.getFullYear();
     const mm = String(fechaObj.getMonth() + 1).padStart(2, "0");
@@ -87,7 +97,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function getMovimientosAPI() {
     const res = await apiFetch("/api/movimientos/");
-    return Array.isArray(res.data) ? res.data : [];
+    const data = Array.isArray(res.data) ? res.data : [];
+    return data.map(m => ({
+      ...m,
+      fecha: m.fecha || m.fecha_creacion || m.fecha_movimiento || ""
+    }));
   }
 
   async function getMovimientoDetalleAPI(idMovimiento) {
