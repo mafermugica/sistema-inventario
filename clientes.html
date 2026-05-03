@@ -301,34 +301,6 @@
                         <th style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td>CLI-001</td>
-                        <td>Claudia</td>
-                        <td>Ortiz</td>
-                        <td>Rodriguez</td>
-                        <td>+52 123 456 7890</td>
-                        <td>claudia.ortiz@ejemplo.com</td>
-                        <td>
-                            <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle"><i class="fas fa-eye"></i></button>
-                            <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar"><i class="fas fa-pen"></i></button>
-                            <button type="button" class="btn btn-danger btn-circle btn-sm btn-eliminar" title="Eliminar"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>CLI-002</td>
-                        <td>Carlos</td>
-                        <td>Garcia</td>
-                        <td>Mendoza</td>
-                        <td>+52 987 654 3210</td>
-                        <td>carlos.garcia@ejemplo.com</td>
-                        <td>
-                            <button type="button" class="btn btn-info btn-circle btn-sm btn-detalle" title="Ver detalle"><i class="fas fa-eye"></i></button>
-                            <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar"><i class="fas fa-pen"></i></button>
-                            <button type="button" class="btn btn-danger btn-circle btn-sm btn-eliminar" title="Eliminar"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                </tbody>
             </table>
         </div>
     </div>
@@ -419,21 +391,13 @@
             <label for="estadoCli">Estado</label>
             <select id="estadoCli" class="form-control">
                 <option value="" selected>Elegir...</option>
-                <option value="Veracruz">Veracruz</option>
-                <option value="Puebla">Puebla</option>
-                <option value="Oaxaca">Oaxaca</option>
-                <option value="Chiapas">Chiapas</option>
             </select>
         </div>
 
         <div class="form-group col-md-6">
             <label for="municipioCli">Municipio</label>
-            <select id="municipioCli" class="form-control">
+            <select id="municipioCli" class="form-control" disabled>
                 <option value="" selected>Elegir...</option>
-                <option value="Xalapa">Xalapa</option>
-                <option value="Veracruz Puerto">Veracruz Puerto</option>
-                <option value="Coatepec">Coatepec</option>
-                <option value="Boca del Río">Boca del Río</option>
             </select>
         </div>
     </div>
@@ -551,6 +515,9 @@
 
     <!-- Custom scripts for all pages-->
     <script src="js/sb-admin-2.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="js/clientes.js"></script>
 </body>

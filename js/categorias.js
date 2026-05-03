@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://143.198.230.63";
+  const API_BASE = "http://146.190.165.82";
 
   const btnGuardar = document.getElementById("btnGuardarCategoria");
   const form = document.getElementById("formularioCategoria");

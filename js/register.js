@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputRepeatPassword = document.getElementById("repeatPasswordUsuario");
   const mensajeRegistro = document.getElementById("mensajeRegistro");
 
-  const API_URL = "http://143.198.230.63/api/usuarios/";
+  const API_URL = "http://146.190.165.82/api/usuarios/";
 
   function mostrarMensaje(texto, tipo = "danger") {
     mensajeRegistro.textContent = texto;

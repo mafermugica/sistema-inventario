@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://143.198.230.63/api/usuarios";
+  const API_BASE = "http://146.190.165.82/api/usuarios";
 
   const tbody = document.querySelector("#dataTable tbody");
   const inputBuscar = document.getElementById("buscarUsuarios");

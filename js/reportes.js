@@ -1,4 +1,4 @@
-const API_URL = "http://143.198.230.63";
+const API_URL = "http://146.190.165.82";
 
 const ENDPOINTS = {
     ventas: "/api/ventas/",
