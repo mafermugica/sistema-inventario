@@ -297,7 +297,7 @@ async function guardarProducto() {
     };
 
     if (modo === "create") {
-        payload.clave = folio;
+        payload.folio = folio;
     }
 
     try {
@@ -376,7 +376,7 @@ async function abrirEditarProducto(idProducto) {
 
 
 async function eliminarProducto(idProducto) {
-    const confirmado = await confirmarAccion("El producto será eliminado.");
+    const confirmado = await confirmarAccion("El producto será eliminado. También se eliminarán todos los inventarios asociados a este producto.");
 
     if (!confirmado) return;
 

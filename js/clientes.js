@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_URL = "http://143.198.230.63";
+  const API_URL = "http://146.190.165.82";
 
   const btnGuardar = document.getElementById("btnGuardarCliente");
   const btnAbrirCategorias = document.getElementById("btnAbrirCategorias");
@@ -120,7 +120,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function cargarClientes() {
     try {
       const res = await apiFetch("/api/clientes/");
-      clientesGlobal = Array.isArray(res.data) ? res.data : [];
+      console.log("Respuesta API clientes:", res);
+      clientesGlobal = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
       renderTabla();
     } catch (error) {
       console.error("Error cargando clientes:", error);
@@ -128,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTabla(filtro = "") {
+    console.log("renderTabla called, clientesGlobal:", clientesGlobal);
     const f = (filtro || "").toLowerCase();
     const lista = !f
       ? clientesGlobal
@@ -135,8 +137,13 @@ document.addEventListener("DOMContentLoaded", () => {
           const texto = `${c.folio} ${c.nombre} ${c.apellido_paterno} ${c.apellido_materno || ""} ${c.telefono} ${c.email}`.toLowerCase();
           return texto.includes(f);
         });
-    if (!tbody) return;
-    tbody.innerHTML = lista.map(c => `
+    console.log("Lista a renderizar:", lista);
+    let tablaBody = document.querySelector("#dataTable tbody");
+    if (!tablaBody) {
+      tablaBody = document.createElement("tbody");
+      document.getElementById("dataTable").appendChild(tablaBody);
+    }
+    tablaBody.innerHTML = lista.map(c => `
       <tr data-id="${c.id_cliente}">
         <td>${c.folio || ""}</td>
         <td>${c.nombre || ""}</td>
@@ -340,19 +347,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const tel = inpTel.value.replace(/\D/g, "");
     const email = inpEmail.value.trim();
 
-    if (!/^\d{10}$/.test(tel)) {
-      alert("El telefono debe tener 10 digitos");
-      return;
-    }
-    if (!folio || !nombre || !apPat || !tel || !email) {
-      alert("Completa todos los campos obligatorios");
-      return;
-    }
-    if (!email.includes("@") || !email.includes(".")) {
-      alert("Email invalido");
-      return;
-    }
-
     const cliente = {
       folio,
       nombre,
@@ -362,7 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
       email,
       id_estado: idEstado,
       id_municipio: idMunicipio,
-      categorias_ids: categoriasTemporales.length > 0 ? categoriasTemporales : null
+      categorias_ids: categoriasTemporales.length > 0 ? categoriasTemporales : []
     };
 
     try {
@@ -403,10 +397,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  if (tbody) {
-    tbody.addEventListener("click", async (e) => {
+  document.addEventListener("click", async (e) => {
       const tr = e.target.closest("tr");
-      if (!tr) return;
+      if (!tr || !tr.closest("#dataTable")) return;
       const id = parseInt(tr.getAttribute("data-id"));
       const cliente = clientesGlobal.find(c => c.id_cliente === id);
       if (!cliente) return;
@@ -423,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await Swal.fire({
           icon: "warning",
           title: "¿Estas seguro?",
-          text: `¿Eliminar el cliente ${cliente.folio}?`,
+          text: `¿Eliminar el cliente ${cliente.folio}?\n\nLas ventas asociadas a este cliente se moverán al cliente "Público General".`,
           showCancelButton: true,
           confirmButtonText: "Si, eliminar",
           cancelButtonText: "Cancelar"
@@ -450,7 +443,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
-  }
 
   if (inputBuscar) {
     inputBuscar.addEventListener("input", () => {

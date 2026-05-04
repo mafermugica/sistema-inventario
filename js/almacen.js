@@ -325,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function eliminarAlmacen(idAlmacen, folio) {
-    if (!confirm(`¿Eliminar el almacén ${folio}?`)) return;
+    if (!confirm(`¿Eliminar el almacén ${folio}?\n\nTambién se eliminarán todos los inventarios asociados a este almacén.`)) return;
 
     try {
       await eliminarAlmacenAPI(idAlmacen);
