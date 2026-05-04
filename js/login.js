@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkboxRecordarme = document.getElementById("customCheck");
   const mensajeLogin = document.getElementById("mensajeLogin");
 
-  const API_URL = "http://146.190.165.82/api/usuarios/login";
+  const API_URL = "http://146.190.165.82";
   const KEY_USUARIO = "usuarioLogueado";
   const KEY_EMAIL = "emailRecordado";
 

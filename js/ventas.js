@@ -109,7 +109,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function apiFetch(endpoint, options = {}) {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const url = `${API_BASE}${endpoint}`;
+    console.log("Request URL:", url);
+    const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
         ...(options.headers || {})
@@ -119,9 +121,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const data = await response.json().catch(() => null);
 
-        if (!response.ok) {
-      const mensaje = data?.message || data?.error || data?.msg || "Error en la petición";
-      throw new Error(mensaje);
+    if (!data) {
+      throw new Error(`Error del servidor (${response.status})`);
+    }
+
+    if (!response.ok) {
+      const mensaje = (data?.message || data?.error || data?.msg || "Error en la petición");
+      throw new Error(mensaje || `Error del servidor (${response.status})`);
     }
 
     if (data?.success === false) {
@@ -133,63 +139,64 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function getVentasAPI() {
-    const res = await apiFetch("/api/ventas/");
+    const res = await apiFetch("/ventas/");
     return Array.isArray(res.data) ? res.data : [];
   }
 
   async function getVentaAPI(idVenta) {
-    const res = await apiFetch(`/api/ventas/${idVenta}`);
+    const res = await apiFetch(`/ventas/${idVenta}`);
     return res.data || null;
   }
 
   async function crearVentaAPI(payload) {
-    return await apiFetch("/api/ventas/", {
+    console.log("Payload enviado:", JSON.stringify(payload, null, 2));
+    return await apiFetch("/ventas/", {
       method: "POST",
       body: JSON.stringify(payload)
     });
   }
 
   async function actualizarVentaAPI(idVenta, payload) {
-    return await apiFetch(`/api/ventas/${idVenta}`, {
+    return await apiFetch(`/ventas/${idVenta}`, {
       method: "PUT",
       body: JSON.stringify(payload)
     });
   }
 
   async function eliminarVentaAPI(idVenta) {
-    return await apiFetch(`/api/ventas/${idVenta}`, {
+    return await apiFetch(`/ventas/${idVenta}`, {
       method: "DELETE"
     });
   }
 
   async function getProductosAPI() {
-    const res = await apiFetch("/api/productos/");
+    const res = await apiFetch("/productos/");
     return Array.isArray(res.data) ? res.data : [];
   }
 
   async function getAlmacenesAPI() {
-    const res = await apiFetch("/api/almacenes/");
+    const res = await apiFetch("/almacenes/");
     return Array.isArray(res.data) ? res.data : [];
   }
 
   async function getInventariosAPI() {
-    const res = await apiFetch("/api/inventarios/");
+    const res = await apiFetch("/inventarios/");
     return Array.isArray(res.data) ? res.data : [];
   }
 
   async function getInventarioDetalleAPI(idInventario) {
-    const res = await apiFetch(`/api/inventarios/${idInventario}`);
+    const res = await apiFetch(`/inventarios/${idInventario}`);
     return res.data || null;
   }
 
   async function getEstadosAPI() {
-    const res = await apiFetch("/api/estados_municipios/");
+    const res = await apiFetch("/estados_municipios/");
     return Array.isArray(res.data) ? res.data : [];
   }
 
   async function getMunicipiosPorEstadoAPI(idEstado) {
     if (!idEstado) return [];
-    const res = await apiFetch(`/api/estados_municipios/${idEstado}`);
+    const res = await apiFetch(`/estados_municipios/${idEstado}`);
     return Array.isArray(res.data) ? res.data : [];
   }
 
@@ -785,11 +792,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const folio = norm(inpFolio.value);
     const total = calcularTotalTemporal();
 
+    const nombreEstado = selectEstado?.value ? selectEstado.options[selectEstado.selectedIndex]?.text || null : null;
+    const nombreMunicipio = selectMunicipio?.value ? selectMunicipio.options[selectMunicipio.selectedIndex]?.text || null : null;
+
     return {
       folio,
       precio_venta_final: total,
-      id_estado: selectEstado ? Number(selectEstado.value) || null : null,
-      id_municipio: selectMunicipio ? Number(selectMunicipio.value) || null : null,
+      id_estado: nombreEstado,
+      id_municipio: nombreMunicipio,
       detalle: construirPayloadDetalle()
     };
   }
