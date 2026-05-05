@@ -24,6 +24,47 @@ document.addEventListener("DOMContentLoaded", () => {
     return Number(valor || 0).toFixed(2);
   }
 
+  function showError(texto) {
+    return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showSuccess(texto) {
+    return Swal.fire({
+      icon: "success",
+      title: "Éxito",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showWarning(texto) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Atención",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  async function confirmDelete(texto) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Estás seguro?",
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d"
+    });
+    return result.isConfirmed;
+  }
+
   async function apiFetch(endpoint, options = {}) {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
@@ -119,8 +160,14 @@ document.addEventListener("DOMContentLoaded", () => {
           return texto.includes(f);
         });
 
+    let tablaBody = document.querySelector("#dataTable tbody");
+    if (!tablaBody) {
+      tablaBody = document.createElement("tbody");
+      document.getElementById("dataTable").appendChild(tablaBody);
+    }
+
     if (!lista.length) {
-      tbody.innerHTML = `
+      tablaBody.innerHTML = `
         <tr>
           <td colspan="5" class="text-center text-muted">No hay inventarios registrados.</td>
         </tr>
@@ -128,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    tbody.innerHTML = lista.map((i) => `
+    tablaBody.innerHTML = lista.map((i) => `
       <tr data-id="${i.id_inventario}">
         <td>${i.descripcion_producto || ""}</td>
         <td>${i.nombre_almacen || ""}</td>
@@ -156,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const inv = await getInventarioDetalleAPI(idInventario);
 
       if (!inv) {
-        alert("No se pudo obtener el detalle del inventario");
+        await showError("No se pudo obtener el detalle del inventario");
         return;
       }
 
@@ -172,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalDetalleInventario").modal("show");
     } catch (error) {
-      alert(error.message);
+      await showError(error.message);
     }
   }
 
@@ -192,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
       cargarAlmacenes();
       renderTabla();
     } catch (error) {
-      alert(`Error al cargar datos iniciales: ${error.message}`);
+      await showError(`Error al cargar datos iniciales: ${error.message}`);
     }
   }
 
@@ -210,12 +257,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const minStock = Number(inpMinStock.value);
 
       if (!idProducto || !idAlmacen) {
-        alert("Selecciona producto y almacén");
+        await showWarning("Selecciona producto y almacén");
         return;
       }
 
       if (isNaN(stock) || stock < 0 || isNaN(minStock) || minStock < 0) {
-        alert("Ingresa valores válidos para stock y stock mínimo");
+        await showWarning("Ingresa valores válidos para stock y stock mínimo");
         return;
       }
 
@@ -231,17 +278,19 @@ document.addEventListener("DOMContentLoaded", () => {
         renderTabla(inputBuscar ? inputBuscar.value : "");
         resetFormulario();
         $(modalRegistro).modal("hide");
-        alert("Inventario creado correctamente");
+        await showSuccess("Inventario creado correctamente");
       } catch (error) {
-        alert(error.message);
+        await showError(error.message);
       }
     });
   }
 
-  if (tbody) {
-    tbody.addEventListener("click", async (e) => {
+  // Event delegation for table actions
+  document.addEventListener("click", async (e) => {
+      console.log("Click event fired", e.target);
       const tr = e.target.closest("tr");
-      if (!tr) return;
+      console.log("tr found:", tr);
+      if (!tr || !tr.closest("#dataTable")) return;
 
       const idInventario = Number(tr.getAttribute("data-id"));
       if (!idInventario) return;
@@ -252,19 +301,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (e.target.closest(".btn-eliminar")) {
-        if (!confirm("¿Eliminar inventario?")) return;
+        const confirmar = await confirmDelete("¿Eliminar inventario?");
+        if (!confirmar) return;
 
         try {
           await eliminarInventarioAPI(idInventario);
           inventariosCache = await getInventariosAPI();
           renderTabla(inputBuscar ? inputBuscar.value : "");
-          alert("Inventario eliminado correctamente");
+          await showSuccess("Inventario eliminado correctamente");
         } catch (error) {
-          alert(error.message);
+          await showError(error.message);
         }
       }
     });
-  }
 
   if (inputBuscar) {
     inputBuscar.addEventListener("input", () => {

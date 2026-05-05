@@ -174,6 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
     return Array.isArray(res.data) ? res.data : [];
   }
 
+  async function getProductoAPI(folio) {
+    const res = await apiFetch(`/productos/${folio}`);
+    return res.data || null;
+  }
+
   async function getAlmacenesAPI() {
     const res = await apiFetch("/almacenes/");
     return Array.isArray(res.data) ? res.data : [];
@@ -293,29 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function cargarProductos() {
-    if (!selectProductoVenta) return;
-
-    selectProductoVenta.innerHTML = "";
-
-    const optionDefault = document.createElement("option");
-    optionDefault.value = "";
-    optionDefault.textContent = "Elegir producto...";
-    selectProductoVenta.appendChild(optionDefault);
-
-    productosCache.forEach((p) => {
-      const option = document.createElement("option");
-      option.value = p.id_producto;
-      option.textContent =
-        p.descripcion ||
-        p.descripcion_producto ||
-        p.nombre_producto ||
-        `Producto ${p.id_producto}`;
-      option.setAttribute(
-        "data-precio",
-        Number(p.precio ?? p.precio_producto ?? 0)
-      );
-      selectProductoVenta.appendChild(option);
-    });
+    // No longer needed - now using API search endpoint
   }
 
   function cargarAlmacenes(almacenSeleccionado = "") {
@@ -589,6 +572,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectProductoVenta) {
       cargarProductos();
       selectProductoVenta.value = "";
+      const dropdown = document.getElementById("dropdownProductosVenta");
+      if (dropdown) dropdown.style.display = "none";
     }
 
     if (selectAlmacenVenta) {
@@ -792,14 +777,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const folio = norm(inpFolio.value);
     const total = calcularTotalTemporal();
 
-    const nombreEstado = selectEstado?.value ? selectEstado.options[selectEstado.selectedIndex]?.text || null : null;
-    const nombreMunicipio = selectMunicipio?.value ? selectMunicipio.options[selectMunicipio.selectedIndex]?.text || null : null;
+    const idEstado = selectEstado?.value ? Number(selectEstado.value) : null;
+    const idMunicipio = selectMunicipio?.value ? Number(selectMunicipio.value) : null;
 
     return {
       folio,
       precio_venta_final: total,
-      id_estado: nombreEstado,
-      id_municipio: nombreMunicipio,
+      id_estado: idEstado,
+      id_municipio: idMunicipio,
       detalle: construirPayloadDetalle()
     };
   }
@@ -951,22 +936,135 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (selectProductoVenta) {
-    selectProductoVenta.addEventListener("change", () => {
-      const option = selectProductoVenta.options[selectProductoVenta.selectedIndex];
-      const precio = Number(option?.getAttribute("data-precio") || 0);
+  let timeoutBusqueda = null;
 
-      if (!norm(inpPrecioVenta.value)) {
-        inpPrecioVenta.value = precio ? money(precio) : "";
+  function crearDropdownResultados() {
+    let dropdown = document.getElementById("dropdownProductosVenta");
+    if (!dropdown) {
+      dropdown = document.createElement("div");
+      dropdown.id = "dropdownProductosVenta";
+      dropdown.className = "dropdown-menu w-100 show";
+      dropdown.style.position = "absolute";
+      dropdown.style.zIndex = "1000";
+      dropdown.style.maxHeight = "300px";
+      dropdown.style.overflowY = "auto";
+      dropdown.style.display = "block";
+      dropdown.style.width = "100%";
+      dropdown.style.marginTop = "0px";
+      
+      // Ensure parent has position relative
+      const parent = selectProductoVenta.parentNode;
+      if (getComputedStyle(parent).position === "static") {
+        parent.style.position = "relative";
+      }
+      parent.appendChild(dropdown);
+    }
+    return dropdown;
+  }
+
+  if (selectProductoVenta) {
+    selectProductoVenta.addEventListener("input", async () => {
+      const valor = selectProductoVenta.value.trim();
+
+      clearTimeout(timeoutBusqueda);
+
+      if (!valor || valor.length < 2) {
+        inpPrecioVenta.value = "";
+        const dropdown = document.getElementById("dropdownProductosVenta");
+        if (dropdown) dropdown.style.display = "none";
+        return;
+      }
+
+      timeoutBusqueda = setTimeout(async () => {
+        try {
+          // Use cached products or fetch if not available
+          let productos = productosCache.length > 0 ? productosCache : [];
+          
+          if (productos.length === 0) {
+            const res = await apiFetch("/productos/");
+            productos = Array.isArray(res.data) ? res.data : [];
+          }
+
+          // Filter by search text
+          const valorLower = valor.toLowerCase();
+          productos = productos.filter(p => {
+            const nombre = (p.descripcion || p.nombre_producto || "").toLowerCase();
+            const folio = (p.folio || "").toLowerCase();
+            return nombre.includes(valorLower) || folio.includes(valorLower);
+          });
+
+          const dropdown = crearDropdownResultados();
+          dropdown.innerHTML = "";
+
+          if (productos.length === 0) {
+            dropdown.innerHTML = '<div class="dropdown-item text-muted">No se encontraron productos</div>';
+            dropdown.style.display = "block";
+            return;
+          }
+
+          productos.slice(0, 10).forEach(p => {
+            const item = document.createElement("a");
+            item.className = "dropdown-item";
+            item.href = "#";
+            item.style.cursor = "pointer";
+            const nombre = p.descripcion || p.nombre_producto || `Producto ${p.id_producto}`;
+            item.innerHTML = `<strong>${p.folio || ""}</strong> - ${nombre}`;
+            item.setAttribute("data-id", p.id_producto);
+            item.setAttribute("data-folio", p.folio || "");
+            item.setAttribute("data-nombre", nombre);
+            item.setAttribute("data-precio", p.precio || 0);
+
+            item.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              selectProductoVenta.value = `${p.folio || ""} - ${nombre}`;
+              inpPrecioVenta.value = money(p.precio || 0);
+              dropdown.style.display = "none";
+            });
+
+            dropdown.appendChild(item);
+          });
+
+          dropdown.style.display = "block";
+          console.log("Dropdown shown with", productos.length, "items");
+        } catch (error) {
+          console.error("Error al buscar productos:", error);
+        }
+      }, 300);
+    });
+
+    document.addEventListener("click", (e) => {
+      const dropdown = document.getElementById("dropdownProductosVenta");
+      if (dropdown && !selectProductoVenta.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.style.display = "none";
       }
     });
+  }
+
+  function obtenerIdProductoSeleccionado() {
+    const valor = selectProductoVenta?.value;
+    if (!valor) return null;
+
+    const dropdown = document.getElementById("dropdownProductosVenta");
+    if (!dropdown) return null;
+
+    const items = dropdown.querySelectorAll(".dropdown-item");
+    for (const item of items) {
+      const nombre = item.getAttribute("data-nombre");
+      const folio = item.getAttribute("data-folio");
+      const textoCompleto = `${folio} - ${nombre}`;
+      if (valor === textoCompleto) {
+        return Number(item.getAttribute("data-id"));
+      }
+    }
+    return null;
   }
 
   if (btnAgregarDetalle) {
     btnAgregarDetalle.addEventListener("click", async (e) => {
       e.preventDefault();
 
-      const idProducto = Number(selectProductoVenta.value);
+      const idProducto = obtenerIdProductoSeleccionado();
       const idAlmacen = Number(selectAlmacenVenta.value);
       const cantidad = Number(inpCantidadVenta.value);
       const precio = Number(inpPrecioVenta.value);
@@ -986,8 +1084,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const nombreProducto =
-        selectProductoVenta.options[selectProductoVenta.selectedIndex]?.text || "";
+      const nombreProducto = (() => {
+        const valor = selectProductoVenta.value;
+        const dropdown = document.getElementById("dropdownProductosVenta");
+        const items = dropdown?.querySelectorAll(".dropdown-item") || [];
+        for (const item of items) {
+          const nombre = item.getAttribute("data-nombre");
+          const folio = item.getAttribute("data-folio");
+          const textoCompleto = `${folio} - ${nombre}`;
+          if (valor === textoCompleto) {
+            return nombre || "";
+          }
+        }
+        return "";
+      })();
 
       const nombreAlmacen =
         selectAlmacenVenta.options[selectAlmacenVenta.selectedIndex]?.text || "";

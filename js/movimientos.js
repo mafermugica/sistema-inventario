@@ -24,6 +24,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const norm = (v) => (v ?? "").toString().trim();
 
+  function showError(texto) {
+    return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showSuccess(texto) {
+    return Swal.fire({
+      icon: "success",
+      title: "Éxito",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  function showWarning(texto) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Atención",
+      text: texto,
+      confirmButtonText: "Aceptar"
+    });
+  }
+
+  async function confirmDelete(texto) {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Estás seguro?",
+      text: texto,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#6c757d"
+    });
+    return result.isConfirmed;
+  }
+
   function textoTipo(tipo) {
     return tipo ? "Entrada" : "Salida";
   }
@@ -412,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const detalle = await getMovimientoDetalleAPI(mov.id_mov);
 
       if (!detalle) {
-        alert("No se pudo obtener el detalle del movimiento");
+        await showError("No se pudo obtener el detalle del movimiento");
         return;
       }
 
@@ -432,7 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalDetalleMovimiento").modal("show");
     } catch (error) {
-      alert(error.message);
+      await showError(error.message);
     }
   }
 
@@ -441,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const detalle = await getMovimientoDetalleAPI(mov.id_mov);
 
       if (!detalle) {
-        alert("No se pudo obtener el detalle del movimiento");
+        await showError("No se pudo obtener el detalle del movimiento");
         return;
       }
 
@@ -467,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnGuardar.textContent = "Guardar Cambios";
       $(modalRegistro).modal("show");
     } catch (error) {
-      alert(error.message);
+      await showError(error.message);
     }
   }
 
@@ -481,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnGuardar.textContent = "Guardar Movimiento";
       }
     } catch (error) {
-      alert(error.message);
+      await showError(error.message);
     }
   });
 
@@ -501,12 +542,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const cantidad = Number(inpCantidad.value);
 
       if (!fecha || !tipoTexto || !idInventario) {
-        alert("Completa fecha, tipo e inventario");
+        await showWarning("Completa fecha, tipo e inventario");
         return;
       }
 
       if (isNaN(cantidad) || cantidad <= 0) {
-        alert("Ingresa una cantidad válida");
+        await showWarning("Ingresa una cantidad válida");
         return;
       }
 
@@ -526,10 +567,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (modo === "create") {
           await crearMovimientoAPI(payload);
-          alert("Movimiento registrado correctamente");
+          await showSuccess("Movimiento registrado correctamente");
         } else {
           await actualizarMovimientoAPI(idEditando, payload);
-          alert("Movimiento actualizado correctamente");
+          await showSuccess("Movimiento actualizado correctamente");
         }
 
         await cargarInventarios();
@@ -538,7 +579,7 @@ document.addEventListener("DOMContentLoaded", () => {
         $(modalRegistro).modal("hide");
       } catch (error) {
         console.error(error);
-        alert(error.message || "Error al guardar movimiento");
+        await showError(error.message || "Error al guardar movimiento");
       } finally {
         btnGuardar.disabled = false;
         btnGuardar.textContent = textoOriginalBoton;
@@ -567,16 +608,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (e.target.closest(".btn-eliminar")) {
-        if (!confirm(`¿Eliminar el movimiento ${mov.id_mov}?`)) return;
+        const confirmar = await confirmDelete(`¿Eliminar el movimiento ${mov.id_mov}?`);
+        if (!confirmar) return;
 
         try {
           await eliminarMovimientoAPI(mov.id_mov);
           await cargarInventarios();
           await renderTabla(inputBuscar ? inputBuscar.value : "");
-          alert("Movimiento eliminado correctamente");
+          await showSuccess("Movimiento eliminado correctamente");
         } catch (error) {
           console.error(error);
-          alert(error.message || "Error al eliminar movimiento");
+          await showError(error.message || "Error al eliminar movimiento");
         }
       }
     });
@@ -587,7 +629,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         await renderTabla(inputBuscar.value);
       } catch (error) {
-        alert(error.message);
+        await showError(error.message);
       }
     });
   }
@@ -598,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await renderTabla();
       resetFormulario();
     } catch (error) {
-      alert(`Error al cargar datos iniciales: ${error.message}`);
+      await showError(`Error al cargar datos iniciales: ${error.message}`);
     }
   })();
 });
