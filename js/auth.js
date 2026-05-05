@@ -2,7 +2,7 @@ const API_URL = "http://146.190.165.82";
 const KEY_TOKEN = "token";
 const KEY_USUARIO = "usuarioLogueado";
 
-const PAGINAS_ADMIN = ["inventario.html", "almacen.html", "usuarios.html"];
+const PAGINAS_EMPLEADO = ["productos.html", "clientes.html", "reportes.html", "index.html"];
 
 function verificarToken() {
     const token = localStorage.getItem(KEY_TOKEN);
@@ -38,13 +38,15 @@ function init() {
     if (!usuario) return;
 
     const paginaActual = obtenerPaginaActual();
+    const rol = (usuario.rol || "").toLowerCase();
+    const esAdmin = rol === "administrador" || rol === "admin";
 
-    if (usuario.rol === "empleado" && PAGINAS_ADMIN.includes(paginaActual)) {
+    if (!esAdmin && !PAGINAS_EMPLEADO.includes(paginaActual)) {
         window.location.href = "index.html";
         return;
     }
 
-    if (usuario.rol === "empleado") {
+    if (!esAdmin) {
         ocultarMenusAdmin();
     }
 
@@ -52,17 +54,33 @@ function init() {
 }
 
 function ocultarMenusAdmin() {
-    const items = document.querySelectorAll(".nav-item");
+    const collapseLinks = document.querySelectorAll(".collapse-item");
+    const allowedPages = ["productos.html", "clientes.html", "reportes.html", "index.html"];
     
-    items.forEach(item => {
-        const link = item.querySelector(".nav-link");
-        if (link) {
-            const href = link.getAttribute("href");
-            if (PAGINAS_ADMIN.includes(href)) {
-                item.style.display = "none";
-            }
+    let visibleCount = 0;
+    
+    collapseLinks.forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && allowedPages.includes(href)) {
+            visibleCount++;
+        } else if (href && href !== "login.html") {
+            link.style.display = "none";
         }
     });
+    
+    const navLinks = document.querySelectorAll(".sidebar .nav-link");
+    
+    navLinks.forEach(link => {
+        const href = link.getAttribute("href");
+        if (href && !allowedPages.includes(href) && href !== "#") {
+            link.parentElement.style.display = "none";
+        }
+    });
+    
+    const paginasNavItem = document.querySelector('.nav-link[data-target="#collapsePages"]');
+    if (paginasNavItem && visibleCount === 0) {
+        paginasNavItem.parentElement.style.display = "none";
+    }
 }
 
 function actualizarNombreUsuario(usuario) {

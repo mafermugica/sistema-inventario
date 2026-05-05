@@ -391,6 +391,8 @@
 
     <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script src="js/sb-admin-2.min.js"></script>
 
     <script src="js/auth.js"></script>
@@ -400,7 +402,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
     <script>
-    const API_URL = "http://143.198.230.63";
+    const API_REPORTES = "http://146.190.165.82";
 
     let ventasGlobal = [];
     let productosGlobal = [];
@@ -417,7 +419,9 @@
 
     async function obtenerDatos(endpoint) {
         try {
-            const response = await fetch(`${API_URL}${endpoint}`);
+            const token = localStorage.getItem("token");
+            const headers = token ? { "Authorization": `Bearer ${token}` } : {};
+            const response = await fetch(`${API_REPORTES}${endpoint}`, { headers });
             const result = await response.json();
             if (!response.ok || result.success === false) {
                 throw new Error(result.message || "Error al obtener datos");
