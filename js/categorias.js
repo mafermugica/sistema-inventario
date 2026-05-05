@@ -97,8 +97,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     tbody.innerHTML = lista.map((c) => `
-      <tr data-id="${c.id_cat}">
-        <td>${c.id_cat}</td>
+      <tr data-id="${c.id_cat || c.id_categoria}">
+        <td>${c.id_cat || c.id_categoria}</td>
         <td>${c.nombre}</td>
         <td>
           <button type="button" class="btn btn-warning btn-circle btn-sm btn-editar" title="Editar"><i class="fas fa-pen"></i></button>
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function abrirEditar(categoria) {
     modo = "edit";
-    idEditando = categoria.id_cat;
+    idEditando = categoria.id_cat || categoria.id_categoria;
     inpNombre.value = categoria.nombre || "";
     tituloModal.textContent = `Editar Categoría`;
     btnGuardar.textContent = "Guardar Cambios";
@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!tr) return;
 
       const id = Number(tr.getAttribute("data-id"));
-      const categoria = categoriasCache.find((c) => Number(c.id_cat) === id);
+      const categoria = categoriasCache.find((c) => Number(c.id_cat || c.id_categoria) === id);
       if (!categoria) return;
 
       if (e.target.closest(".btn-editar")) {

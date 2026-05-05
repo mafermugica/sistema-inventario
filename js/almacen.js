@@ -213,7 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const almacen = await getAlmacenDetalleAPI(idAlmacen);
 
       if (!almacen) {
-        alert("No se pudo cargar el almacén");
+        Swal.fire({ icon: "error", title: "Error", text: "No se pudo cargar el almacén", confirmButtonText: "Aceptar" });
         return;
       }
 
@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $(modalRegistro).modal("show");
     } catch (err) {
-      alert(`Error al cargar el almacén: ${err.message}`);
+      Swal.fire({ icon: "error", title: "Error", text: `Error al cargar el almacén: ${err.message}`, confirmButtonText: "Aceptar" });
     }
   }
 
@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const almacen = await getAlmacenDetalleAPI(idAlmacen);
 
       if (!almacen) {
-        alert("No se pudo obtener el detalle del almacén");
+        Swal.fire({ icon: "error", title: "Error", text: "No se pudo obtener el detalle del almacén", confirmButtonText: "Aceptar" });
         return;
       }
 
@@ -269,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       $("#modalDetalleAlmacen").modal("show");
     } catch (err) {
-      alert(`Error al cargar el detalle: ${err.message}`);
+      Swal.fire({ icon: "error", title: "Error", text: `Error al cargar el detalle: ${err.message}`, confirmButtonText: "Aceptar" });
     }
   }
 
@@ -284,12 +284,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const nombre = norm(inpNombre?.value);
 
     if (!folio || !nombre) {
-      alert("Completa todos los campos obligatorios");
+      Swal.fire({ icon: "warning", title: "Advertencia", text: "Completa todos los campos obligatorios", confirmButtonText: "Aceptar" });
       return;
     }
 
     if (categoriasTemporales.length === 0) {
-      alert("Agrega al menos una categoría");
+      Swal.fire({ icon: "warning", title: "Advertencia", text: "Agrega al menos una categoría", confirmButtonText: "Aceptar" });
       return;
     }
 
@@ -320,19 +320,27 @@ document.addEventListener("DOMContentLoaded", () => {
       resetFormularioAlmacen();
       $(modalRegistro).modal("hide");
     } catch (err) {
-      alert(`Error al guardar: ${err.message}`);
+      Swal.fire({ icon: "error", title: "Error", text: `Error al guardar: ${err.message}`, confirmButtonText: "Aceptar" });
     }
   }
 
   async function eliminarAlmacen(idAlmacen, folio) {
-    if (!confirm(`¿Eliminar el almacén ${folio}?\n\nTambién se eliminarán todos los inventarios asociados a este almacén.`)) return;
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "¿Estás seguro?",
+      text: `¿Eliminar el almacén ${folio}?\n\nTambién se eliminarán todos los inventarios asociados a este almacén.`,
+      showCancelButton: true,
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar"
+    });
+    if (!result.isConfirmed) return;
 
     try {
       await eliminarAlmacenAPI(idAlmacen);
       almacenesCache = await getAlmacenesAPI();
       renderTabla(inputBuscar ? inputBuscar.value : "");
     } catch (err) {
-      alert(`Error al eliminar: ${err.message}`);
+      Swal.fire({ icon: "error", title: "Error", text: `Error al eliminar: ${err.message}`, confirmButtonText: "Aceptar" });
     }
   }
 
@@ -359,21 +367,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const idCat = Number(selectNuevaCategoria?.value || 0);
 
       if (!idCat) {
-        alert("Selecciona una categoría");
+        Swal.fire({ icon: "warning", title: "Advertencia", text: "Selecciona una categoría", confirmButtonText: "Aceptar" });
         return;
       }
 
       const categoria = categoriasCache.find((cat) => Number(cat.id_cat) === idCat);
 
       if (!categoria) {
-        alert("No se encontró la categoría");
+        Swal.fire({ icon: "error", title: "Error", text: "No se encontró la categoría", confirmButtonText: "Aceptar" });
         return;
       }
 
       const yaExiste = categoriasTemporales.some((cat) => Number(cat.id_cat) === idCat);
 
       if (yaExiste) {
-        alert("Esa categoría ya fue agregada");
+        Swal.fire({ icon: "warning", title: "Advertencia", text: "Esa categoría ya fue agregada", confirmButtonText: "Aceptar" });
         return;
       }
 

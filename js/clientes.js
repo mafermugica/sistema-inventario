@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let modo = "create";
   let idEditando = null;
   let categoriasTemporales = [];
+  let clienteOriginal = null;
 
   async function apiFetch(endpoint, options = {}) {
     const response = await fetch(`${API_URL}${endpoint}`, {
@@ -214,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetFormulario() {
     form.reset();
     categoriasTemporales = [];
+    clienteOriginal = null;
     inpFolio.disabled = false;
     selectMunicipio.innerHTML = `<option value="">Elegir municipio...</option>`;
     selectMunicipio.disabled = true;
@@ -225,6 +227,17 @@ document.addEventListener("DOMContentLoaded", () => {
     modo = "edit";
     idEditando = cliente.id_cliente;
     const c = await obtenerDetalleCliente(cliente.id_cliente) || cliente;
+    clienteOriginal = {
+      folio: c.folio || "",
+      nombre: c.nombre || "",
+      apellido_paterno: c.apellido_paterno || "",
+      apellido_materno: c.apellido_materno || "",
+      telefono: c.telefono || "",
+      email: c.email || "",
+      id_estado: c.id_estado || null,
+      id_municipio: c.id_municipio || null,
+      categorias_ids: (c.categorias || []).map(cat => cat.id_categoria || cat)
+    };
     inpFolio.value = c.folio || "";
     inpNombre.value = c.nombre || "";
     inpApPat.value = c.apellido_paterno || "";
@@ -235,7 +248,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await cargarEstados(c.id_estado);
       await cargarMunicipios(c.id_estado, c.id_municipio);
     }
-    categoriasTemporales = (c.categorias || []).map(cat => cat.id_categoria || cat);
+    categoriasTemporales = clienteOriginal.categorias_ids.slice();
     renderCategoriasTemporales();
     actualizarEncabezadoCategorias();
     inpFolio.disabled = true;
@@ -346,18 +359,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const idMunicipio = selectMunicipio.value ? Number(selectMunicipio.value) : null;
     const tel = inpTel.value.replace(/\D/g, "");
     const email = inpEmail.value.trim();
+    const nuevasCategorias = (categoriasTemporales?.length > 0) ? categoriasTemporales : [];
 
-    const cliente = {
-      folio,
-      nombre,
-      apellido_paterno: apPat,
-      apellido_materno: apMat || null,
-      telefono: tel,
-      email,
-      id_estado: idEstado,
-      id_municipio: idMunicipio,
-      categorias_ids: categoriasTemporales.length > 0 ? categoriasTemporales : []
-    };
+    let cliente;
+    if (modo === "create") {
+      cliente = {
+        folio,
+        nombre,
+        apellido_paterno: apPat,
+        apellido_materno: apMat || null,
+        telefono: tel,
+        email,
+        id_estado: idEstado,
+        id_municipio: idMunicipio,
+        categorias_ids: nuevasCategorias
+      };
+    } else {
+      cliente = {};
+      if (clienteOriginal && clienteOriginal.nombre !== nombre) cliente.nombre = nombre;
+      if (clienteOriginal && clienteOriginal.apellido_paterno !== apPat) cliente.apellido_paterno = apPat;
+      if (clienteOriginal && clienteOriginal.apellido_materno !== (apMat || null)) cliente.apellido_materno = apMat || null;
+      if (clienteOriginal && clienteOriginal.telefono !== tel) cliente.telefono = tel;
+      if (clienteOriginal && clienteOriginal.email !== email) cliente.email = email;
+      if (clienteOriginal && clienteOriginal.id_estado !== idEstado) cliente.id_estado = idEstado;
+      if (clienteOriginal && clienteOriginal.id_municipio !== idMunicipio) cliente.id_municipio = idMunicipio;
+      
+      cliente.categorias_ids = nuevasCategorias ?? [];
+
+      if (Object.keys(cliente).length === 0) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Sin cambios",
+          text: "No se detectaron cambios en el cliente",
+          confirmButtonText: "Aceptar"
+        });
+        return;
+      }
+    }
 
     try {
       if (modo === "create") {

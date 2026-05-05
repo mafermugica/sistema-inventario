@@ -1,6 +1,8 @@
 const API_URL = "http://146.190.165.82";
+const KEY_TOKEN = "token";
 
 const ENDPOINTS = {
+    reportes: "/api/reportes/",
     ventas: "/api/ventas/",
     productos: "/api/productos/"
 };
@@ -31,9 +33,21 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // CONSULTA GENERAL
-async function obtenerDatos(endpoint) {
+async function obtenerDatos(endpoint, params = {}) {
     try {
-        const response = await fetch(`${API_URL}${endpoint}`);
+        const queryString = new URLSearchParams(params).toString();
+        const url = queryString ? `${API_URL}${endpoint}?${queryString}` : `${API_URL}${endpoint}`;
+        const token = localStorage.getItem(KEY_TOKEN);
+        
+        const headers = {
+            "Content-Type": "application/json"
+        };
+        
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(url, { headers });
         const result = await response.json();
 
         if (!response.ok || result.success === false) {
@@ -47,13 +61,24 @@ async function obtenerDatos(endpoint) {
     }
 }
 
+function obtenerParamsFecha() {
+    const fechaInicio = document.getElementById("fechaInicio")?.value;
+    const fechaFinal = document.getElementById("fechaFinal")?.value;
+    const params = {};
+    
+    if (fechaInicio) params.fecha_inicio = fechaInicio;
+    if (fechaFinal) params.fecha_final = fechaFinal;
+    
+    return params;
+}
+
 async function cargarReportes() {
-    ventasGlobal = await obtenerDatos(ENDPOINTS.ventas) || [];
-    productosGlobal = await obtenerDatos(ENDPOINTS.productos) || [];
+    const params = obtenerParamsFecha();
+    const reportesData = await obtenerDatos(ENDPOINTS.reportes, params) || {};
 
-    ventasGlobal = filtrarVentasPorFecha(ventasGlobal);
-
-    detalleVentasGlobal = await obtenerDetalleTodasLasVentas(ventasGlobal);
+    ventasGlobal = reportesData.ventas || [];
+    productosGlobal = reportesData.productos || [];
+    detalleVentasGlobal = reportesData.detalleVentas || [];
 
     const ventasPorProducto = agruparVentasPorProducto(detalleVentasGlobal);
     const ventasPorLinea = agruparVentasPorLinea(detalleVentasGlobal);

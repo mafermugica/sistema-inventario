@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const API_URL = "http://146.190.165.82";
   const KEY_USUARIO = "usuarioLogueado";
   const KEY_EMAIL = "emailRecordado";
+  const KEY_TOKEN = "token";
 
   const emailRecordado = localStorage.getItem(KEY_EMAIL);
   if (emailRecordado) {
@@ -49,6 +50,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (result.success) {
         localStorage.setItem(KEY_USUARIO, JSON.stringify(result.data));
+        
+        const token = result.token || result.data?.token;
+        if (token) {
+          localStorage.setItem(KEY_TOKEN, token);
+        }
 
         if (checkboxRecordarme.checked) {
           localStorage.setItem(KEY_EMAIL, email);
