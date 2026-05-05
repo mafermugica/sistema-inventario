@@ -1,4 +1,4 @@
-const API_URL = "http://146.190.165.82";
+const API_BASE = "http://146.190.165.82";
 
 let productos = [];
 let categoriasDisponibles = [];
@@ -140,7 +140,16 @@ async function confirmarAccion(mensaje) {
 
 
 async function fetchBackend(endpoint, options = {}) {
-    const response = await fetch(`${API_URL}${endpoint}`, options);
+    const token = localStorage.getItem("token");
+    const headers = {
+        ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        ...(options.headers || {})
+    };
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers
+    });
 
     let result = null;
 
@@ -628,7 +637,10 @@ async function descargarPlantillaProductos() {
     try {
         alertaCargando("Generando plantilla...");
 
-        const response = await fetch(`${API_URL}/api/productos/plantilla/${idCategoria}`);
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE}/api/productos/plantilla/${idCategoria}`, {
+            headers: token ? { "Authorization": `Bearer ${token}` } : {}
+        });
 
         if (!response.ok) {
             let result = null;
@@ -688,8 +700,10 @@ async function cargarProductosMasivamente() {
     try {
         alertaCargando("Cargando productos...");
 
-        const response = await fetch(`${API_URL}/api/productos/carga-masiva/${idCategoria}`, {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_BASE}/api/productos/carga-masiva/${idCategoria}`, {
             method: "POST",
+            headers: token ? { "Authorization": `Bearer ${token}` } : {},
             body: formData
         });
 

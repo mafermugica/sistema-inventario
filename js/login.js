@@ -2,19 +2,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const formLogin = document.getElementById("formLogin");
   const inputEmail = document.getElementById("exampleInputEmail");
   const inputPassword = document.getElementById("exampleInputPassword");
-  const checkboxRecordarme = document.getElementById("customCheck");
   const mensajeLogin = document.getElementById("mensajeLogin");
 
   const API_URL = "http://146.190.165.82";
   const KEY_USUARIO = "usuarioLogueado";
-  const KEY_EMAIL = "emailRecordado";
   const KEY_TOKEN = "token";
-
-  const emailRecordado = localStorage.getItem(KEY_EMAIL);
-  if (emailRecordado) {
-    inputEmail.value = emailRecordado;
-    checkboxRecordarme.checked = true;
-  }
 
   function mostrarMensaje(texto, tipo = "danger") {
     mensajeLogin.textContent = texto;
@@ -35,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       mostrarMensaje("Validando acceso...", "primary");
 
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_URL}/api/usuarios/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -47,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const result = await response.json();
+      console.log("Respuesta del backend:", result);
 
       if (result.success) {
         localStorage.setItem(KEY_USUARIO, JSON.stringify(result.data));
@@ -54,12 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const token = result.token || result.data?.token;
         if (token) {
           localStorage.setItem(KEY_TOKEN, token);
-        }
-
-        if (checkboxRecordarme.checked) {
-          localStorage.setItem(KEY_EMAIL, email);
-        } else {
-          localStorage.removeItem(KEY_EMAIL);
         }
 
         mostrarMensaje("Login exitoso.", "success");

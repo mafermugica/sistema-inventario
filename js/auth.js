@@ -4,33 +4,19 @@ const KEY_USUARIO = "usuarioLogueado";
 
 const PAGINAS_ADMIN = ["inventario.html", "almacen.html", "usuarios.html"];
 
-async function verificarToken() {
+function verificarToken() {
     const token = localStorage.getItem(KEY_TOKEN);
+    const usuario = localStorage.getItem(KEY_USUARIO);
     
-    if (!token) {
+    if (!token || !usuario) {
         window.location.href = "login.html";
         return null;
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/verificar-usuario`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            }
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            cerrarSesion();
-            return null;
-        }
-
-        return result.data;
+        return JSON.parse(usuario);
     } catch (error) {
-        console.error("Error verificando token:", error);
+        console.error("Error parseando usuario:", error);
         cerrarSesion();
         return null;
     }
@@ -46,8 +32,8 @@ function obtenerPaginaActual() {
     return window.location.href.split("/").pop();
 }
 
-async function init() {
-    const usuario = await verificarToken();
+function init() {
+    const usuario = verificarToken();
     
     if (!usuario) return;
 
@@ -81,8 +67,8 @@ function ocultarMenusAdmin() {
 
 function actualizarNombreUsuario(usuario) {
     const nombreElement = document.getElementById("nombreUsuario");
-    if (nombreElement && usuario.nombre) {
-        nombreElement.textContent = usuario.nombre;
+    if (nombreElement && usuario.nombre_usuario) {
+        nombreElement.textContent = usuario.nombre_usuario;
     }
 }
 

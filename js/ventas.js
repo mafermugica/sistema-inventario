@@ -109,13 +109,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function apiFetch(endpoint, options = {}) {
+    const token = localStorage.getItem("token");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+      ...(options.headers || {})
+    };
+
     const url = `${API_BASE}${endpoint}`;
     console.log("Request URL:", url);
     const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      },
+      headers,
       ...options
     });
 

@@ -19,7 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function obtenerUsuarios() {
     try {
-      const response = await fetch(`${API_BASE}/`);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE}/api/usuarios/`, {
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
       const result = await response.json();
 
       if (!result.success) {
@@ -124,10 +127,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function crearUsuario(payload) {
-    const response = await fetch(`${API_BASE}/`, {
+    console.log("Payload enviado:", payload);
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE}/api/usuarios/`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
       },
       body: JSON.stringify(payload)
     });
@@ -136,10 +142,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function actualizarUsuario(id, payload) {
-    const response = await fetch(`${API_BASE}/${id}`, {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE}/api/usuarios/${id}`, {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(token ? { "Authorization": `Bearer ${token}` } : {})
       },
       body: JSON.stringify(payload)
     });
@@ -148,8 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function eliminarUsuario(id) {
-    const response = await fetch(`${API_BASE}/${id}`, {
-      method: "DELETE"
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API_BASE}/api/usuarios/${id}`, {
+      method: "DELETE",
+      headers: token ? { "Authorization": `Bearer ${token}` } : {}
     });
 
     return response.json();
@@ -163,12 +173,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const id_rol = Number(inputRol.value);
 
     if (!nombre_usuario || !telefono || !email || !id_rol) {
-      alert("Completa los campos obligatorios.");
+      Swal.fire({ icon: "warning", title: "Advertencia", text: "Completa los campos obligatorios.", confirmButtonText: "Aceptar" });
       return;
     }
 
     if (!idUsuarioEditando && !password) {
-      alert("La contraseña es obligatoria para registrar.");
+      Swal.fire({ icon: "warning", title: "Advertencia", text: "La contraseña es obligatoria para registrar.", confirmButtonText: "Aceptar" });
       return;
     }
 
@@ -192,8 +202,10 @@ document.addEventListener("DOMContentLoaded", () => {
         result = await crearUsuario(payload);
       }
 
+      console.log("Respuesta crear usuario:", result);
+
       if (!result.success) {
-        alert(result.message || "No se pudo guardar el usuario.");
+        Swal.fire({ icon: "error", title: "Error", text: result.message || "No se pudo guardar el usuario.", confirmButtonText: "Aceptar" });
         return;
       }
 
@@ -201,10 +213,10 @@ document.addEventListener("DOMContentLoaded", () => {
       limpiarFormulario();
       await obtenerUsuarios();
 
-      alert(idUsuarioEditando ? "Usuario actualizado correctamente." : "Usuario registrado correctamente.");
+      Swal.fire({ icon: "success", title: "Éxito", text: idUsuarioEditando ? "Usuario actualizado correctamente." : "Usuario registrado correctamente.", confirmButtonText: "Aceptar" });
     } catch (error) {
       console.error("Error al guardar usuario:", error);
-      alert("Ocurrió un error al guardar el usuario.");
+      Swal.fire({ icon: "error", title: "Error", text: "Ocurrió un error al guardar el usuario.", confirmButtonText: "Aceptar" });
     }
   });
 
@@ -217,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const usuario = usuarios.find((u) => Number(u.id_usuario) === id);
 
       if (!usuario) {
-        alert("No se encontró el usuario.");
+        Swal.fire({ icon: "error", title: "Error", text: "No se encontró el usuario.", confirmButtonText: "Aceptar" });
         return;
       }
 
@@ -234,15 +246,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await eliminarUsuario(id);
 
         if (!result.success) {
-          alert(result.message || "No se pudo eliminar el usuario.");
+          Swal.fire({ icon: "error", title: "Error", text: result.message || "No se pudo eliminar el usuario.", confirmButtonText: "Aceptar" });
           return;
         }
 
         await obtenerUsuarios();
-        alert("Usuario eliminado correctamente.");
+        Swal.fire({ icon: "success", title: "Éxito", text: "Usuario eliminado correctamente.", confirmButtonText: "Aceptar" });
       } catch (error) {
         console.error("Error al eliminar usuario:", error);
-        alert("Ocurrió un error al eliminar el usuario.");
+        Swal.fire({ icon: "error", title: "Error", text: "Ocurrió un error al eliminar el usuario.", confirmButtonText: "Aceptar" });
       }
     }
   });
