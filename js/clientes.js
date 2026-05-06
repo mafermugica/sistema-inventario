@@ -113,7 +113,8 @@ document.addEventListener("DOMContentLoaded", () => {
       selectNuevaCategoria.innerHTML = `<option value="">Elegir categoria...</option>`;
       categoriasGlobal.forEach((c) => {
         const option = document.createElement("option");
-        option.value = c.id_categoria;
+        const idCat = c.id_categoria ?? c.id_categoria ?? c.id_cat;
+        option.value = idCat;
         option.textContent = c.nombre;
         selectNuevaCategoria.appendChild(option);
       });
@@ -186,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     listaCategoriasCliente.innerHTML = `
       <ul class="list-group">
         ${categoriasTemporales.map(catId => {
-          const cat = categoriasGlobal.find(c => c.id_categoria == catId);
+          const cat = categoriasGlobal.find(c => (c.id_categoria ?? c.id_categoria ?? c.id_cat) == catId);
           const nombre = cat ? cat.nombre : catId;
           return `
             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -240,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
       email: c.email || "",
       id_estado: c.id_estado || null,
       id_municipio: c.id_municipio || null,
-      categorias_ids: (c.categorias || []).map(cat => cat.id_categoria || cat)
+      categorias_ids: (c.categorias || []).map(cat => cat.id_categoria ?? cat.id_categoria ?? cat.id_cat ?? cat)
     };
     inpFolio.value = c.folio || "";
     inpNombre.value = c.nombre || "";
@@ -333,11 +334,16 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Selecciona una categoria");
         return;
       }
-      if (categoriasTemporales.includes(Number(nuevaCategoriaId))) {
+      const idCategoria = Number(nuevaCategoriaId);
+      if (isNaN(idCategoria) || idCategoria === 0) {
+        alert("Categoria invalida");
+        return;
+      }
+      if (categoriasTemporales.includes(idCategoria)) {
         alert("Esa categoria ya fue agregada");
         return;
       }
-      categoriasTemporales.push(Number(nuevaCategoriaId));
+      categoriasTemporales.push(idCategoria);
       renderCategoriasTemporales();
       selectNuevaCategoria.value = "";
     });
