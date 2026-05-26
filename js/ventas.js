@@ -1649,6 +1649,13 @@ return `
     });
   }
 
+  $("#modalNuevoClienteVenta").on("hidden.bs.modal", function () {
+    if ($("#modalNuevaVenta").hasClass("show")) {
+      $("body").addClass("modal-open");
+      $("body").css("padding-right", "");
+    }
+  });
+
   if (btnGuardar) {
     btnGuardar.addEventListener("click", async (e) => {
             e.preventDefault();
