@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formularioMovimiento");
   const tbody = document.querySelector("#dataTable tbody");
   const inputBuscar = document.getElementById("buscarMovimiento");
+  let inventarioSeleccionadoId = null;
+  let timeoutBusquedaInventario = null;
 
   const inpFecha = document.getElementById("fechaMovimiento");
   const selectTipo = document.getElementById("tipoMovimiento");
@@ -117,8 +119,12 @@ document.addEventListener("DOMContentLoaded", () => {
       inpFecha.value = new Date().toISOString().slice(0, 16);
       inpFecha.disabled = false;
     }
-    modo = "create";
-    idEditando = null;
+    inventarioSeleccionadoId = null;
+    if (selectInventario) selectInventario.value = "";
+    const dropdown = document.getElementById("dropdownInventariosMovimiento");
+    if (dropdown) dropdown.style.display = "none";
+      modo = "create";
+      idEditando = null;
   }
 
   async function apiFetch(endpoint, options = {}) {
@@ -232,31 +238,85 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function cargarInventarios() {
     await cargarCatalogos();
-
-    selectInventario.innerHTML = `
-      <option value="">Elegir producto y almacén...</option>
-    `;
-
-    inventariosCache.forEach((inv) => {
-      const descripcionProducto =
-        inv.descripcion_producto ||
-        inv.nombre_producto ||
-        inv.descripcion ||
-        `Producto ${inv.id_producto ?? ""}`;
-
-      const nombreAlmacen =
-        inv.nombre_almacen ||
-        inv.nombre ||
-        inv.descripcion_almacen ||
-        `Almacén ${inv.id_almacen ?? ""}`;
-
-      selectInventario.innerHTML += `
-        <option value="${inv.id_inventario}">
-          ${descripcionProducto} - ${nombreAlmacen}
-        </option>
-      `;
-    });
   }
+
+  function crearDropdownInventarios() {
+    let dropdown = document.getElementById("dropdownInventariosMovimiento");
+    if (!dropdown) {
+      dropdown = document.createElement("div");
+      dropdown.id = "dropdownInventariosMovimiento";
+      dropdown.className = "dropdown-menu w-100 show";
+      dropdown.style.position = "absolute";
+      dropdown.style.zIndex = "1000";
+      dropdown.style.maxHeight = "300px";
+      dropdown.style.overflowY = "auto";
+      dropdown.style.display = "none";
+      const parent = selectInventario.parentNode;
+      if (getComputedStyle(parent).position === "static") {
+        parent.style.position = "relative";
+      }
+      parent.appendChild(dropdown);
+    }
+    return dropdown;
+  }
+
+  if (selectInventario) {
+    selectInventario.addEventListener("input", () => {
+      const valor = selectInventario.value.trim().toLowerCase();
+      inventarioSeleccionadoId = null;
+      clearTimeout(timeoutBusquedaInventario);
+
+      if (!valor || valor.length < 1) {
+        const dropdown = document.getElementById("dropdownInventariosMovimiento");
+        if (dropdown) dropdown.style.display = "none";
+          return;
+        }
+
+      timeoutBusquedaInventario = setTimeout(() => {
+        const filtrados = inventariosCache.filter(inv => {
+        const producto = inv.descripcion_producto || inv.nombre_producto || `Producto ${inv.id_producto}`;
+        const almacen = inv.nombre_almacen || `Almacén ${inv.id_almacen}`;
+        return `${producto} ${almacen}`.toLowerCase().includes(valor);
+      });
+
+      const dropdown = crearDropdownInventarios();
+      dropdown.innerHTML = "";
+
+      if (filtrados.length === 0) {
+        dropdown.innerHTML = '<div class="dropdown-item text-muted">No se encontraron inventarios</div>';
+        dropdown.style.display = "block";
+        return;
+      }
+
+      filtrados.slice(0, 10).forEach(inv => {
+        const producto = inv.descripcion_producto || inv.nombre_producto || `Producto ${inv.id_producto}`;
+        const almacen = inv.nombre_almacen || `Almacén ${inv.id_almacen}`;
+        const item = document.createElement("a");
+        item.className = "dropdown-item";
+        item.href = "#";
+        item.style.cursor = "pointer";
+        item.innerHTML = `<strong>${producto}</strong> — ${almacen} (Stock: ${inv.stock ?? 0})`;
+        item.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          inventarioSeleccionadoId = Number(inv.id_inventario);
+          selectInventario.value = `${producto} — ${almacen}`;
+          dropdown.style.display = "none";
+        });
+        dropdown.appendChild(item);
+      });
+
+      dropdown.style.display = "block";
+    }, 300);
+  });
+
+  document.addEventListener("click", (e) => {
+    const dropdown = document.getElementById("dropdownInventariosMovimiento");
+    if (dropdown && !selectInventario.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.style.display = "none";
+    }
+  });
+}
 
   function buscarProductoPorCoincidencia({ idProducto, folioProducto, descripcionProducto }) {
     if (Number.isFinite(Number(idProducto))) {
@@ -531,9 +591,18 @@ document.addEventListener("DOMContentLoaded", () => {
         detalle.id_almacen
       );
 
-      selectInventario.value = inventarioRelacionado
-        ? inventarioRelacionado.id_inventario
-        : "";
+      if (inventarioRelacionado) {
+        inventarioSeleccionadoId = Number(inventarioRelacionado.id_inventario);
+        const producto = inventarioRelacionado.descripcion_producto || 
+        inventarioRelacionado.nombre_producto || 
+        `Producto ${inventarioRelacionado.id_producto}`;
+        const almacen = inventarioRelacionado.nombre_almacen || 
+        `Almacén ${inventarioRelacionado.id_almacen}`;
+        selectInventario.value = `${producto} — ${almacen}`;
+      } else {
+        inventarioSeleccionadoId = null;
+        selectInventario.value = "";
+      }
 
       tituloModal.textContent = `Editar Movimiento ${detalle.id_mov}`;
       btnGuardar.textContent = "Guardar Cambios";
@@ -569,7 +638,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const fecha = norm(inpFecha.value);
       const tipoTexto = norm(selectTipo.value).toLowerCase();
-      const idInventario = norm(selectInventario.value);
+      const idInventario = inventarioSeleccionadoId;
       const cantidad = Number(inpCantidad.value);
 
       if (!fecha || !tipoTexto || !idInventario) {

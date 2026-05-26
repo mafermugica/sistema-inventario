@@ -1608,8 +1608,8 @@ return `
       const apMat = document.getElementById("apellidoMaternoVenta")?.value.trim();
       const idEstado = document.getElementById("estadoCliVenta")?.value ? Number(document.getElementById("estadoCliVenta").value) : null;
       const idMunicipio = document.getElementById("municipioCliVenta")?.value ? Number(document.getElementById("municipioCliVenta").value) : null;
-      const tel = (document.getElementById("telefonoCliVenta")?.value || "").replace(/\D/g, "");
-      const email = document.getElementById("emailCliVenta")?.value.trim();
+      const tel = (document.getElementById("telefonoCliVenta")?.value || "").replace(/\D/g, "") || null;
+      const email = document.getElementById("emailCliVenta")?.value.trim() || null;
 
       if (!folio || !nombre || !apPat) {
         await showWarning("Folio, Nombre y Apellido Paterno son obligatorios");
@@ -1618,7 +1618,7 @@ return `
 
       const payload = {
         folio, nombre,
-        apellido_paterno: apPat,
+        apellido_paterno: apPat || null,
         apellido_materno: apMat || null,
         telefono: tel,
         email,
@@ -1648,6 +1648,13 @@ return `
       }
     });
   }
+
+  $("#modalNuevoClienteVenta").on("hidden.bs.modal", function () {
+    if ($("#modalNuevaVenta").hasClass("show")) {
+      $("body").addClass("modal-open");
+      $("body").css("padding-right", "");
+    }
+  });
 
   if (btnGuardar) {
     btnGuardar.addEventListener("click", async (e) => {
