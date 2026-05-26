@@ -344,8 +344,19 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("detalleFolioAlmacen").textContent = inv.folio_almacen ?? "";
       document.getElementById("detalleStock").textContent = inv.stock ?? 0;
       document.getElementById("detalleMinStock").textContent = inv.min_stock ?? 0;
-      document.getElementById("detalleCostoProducto").textContent = `$${money(inv.costo_producto)}`;
-      document.getElementById("detallePrecioProducto").textContent = `$${money(inv.precio_producto)}`;
+      document.getElementById("detalleCostoProducto").textContent = 
+        `${money(inv.costo_producto)} ${inv.moneda || "MXN"}`;
+      const contPrecios = document.getElementById("detallePrecioProducto");
+        if (contPrecios) {
+          const precios = Array.isArray(inv.precios) ? inv.precios : [];
+          if (precios.length > 0) {
+            contPrecios.innerHTML = precios.map((p, i) =>
+            `<div><strong>Precio ${i + 1}:</strong> $${money(p)} ${inv.moneda || "MXN"}</div>`
+          ).join("");
+        } else {
+          contPrecios.innerHTML = '<span class="text-muted">Sin precios configurados</span>';
+        }
+      }
 
       $("#modalDetalleInventario").modal("show");
     } catch (error) {
